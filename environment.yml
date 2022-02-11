@@ -107,9 +107,8 @@ dependencies:
   - pathspec=0.9.0=pyhd8ed1ab_0
   - patsy=0.5.2=pyhd8ed1ab_0
   - pcre=8.45=h9c3ff4c_0
-  - pillow=9.0.1=py39he69867a_0
   - pip=22.0.3=pyhd8ed1ab_0
-  - platformdirs=2.4.1=pyhd8ed1ab_1
+  - platformdirs=2.5.0=pyhd8ed1ab_0
   - pthread-stubs=0.4=h36c2ea0_1001
   - pyparsing=3.0.7=pyhd8ed1ab_0
   - pyqt=5.12.3=py39hf3d152e_8
@@ -131,7 +130,7 @@ dependencies:
   - setuptools=60.8.1=py39hf3d152e_0
   - six=1.16.0=pyh6c4a22f_0
   - sqlite=3.37.0=h9cd32fc_0
-  - statsmodels=0.13.1=py39hce5d2b2_0
+  - statsmodels=0.13.2=py39hce5d2b2_0
   - tk=8.6.11=h27826a3_1
   - tomli=2.0.1=pyhd8ed1ab_0
   - torchaudio=0.10.2=py39_cu113
@@ -148,13 +147,11 @@ dependencies:
   - zlib=1.2.11=h36c2ea0_1013
   - zstd=1.5.2=ha95c52a_0
   - pip:
-    - argparse==1.4.0
     - charset-normalizer==2.0.11
     - docker-pycreds==0.4.0
     - gitdb==4.0.9
     - gitpython==3.1.26
     - idna==3.3
-    - mosaicml==0.3.1
     - pathtools==0.1.2
     - pillow-simd==9.0.0.post1
     - promise==2.3
@@ -171,7 +168,7 @@ dependencies:
     - smmap==5.0.0
     - termcolor==1.1.0
     - torch-optimizer==0.1.0
-    - torchmetrics==0.7.1
+    - torchmetrics==0.7.2
     - tqdm==4.62.3
     - urllib3==1.26.8
     - wandb==0.12.10
