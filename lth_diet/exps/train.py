@@ -3,12 +3,13 @@ from dataclasses import dataclass
 import yahp as hp
 from composer.models import ModelHparams
 
+from lth_diet.data import DataHparams, data_registry
 from lth_diet.models import model_registry
 
 
 @dataclass
 class TrainExp(hp.Hparams):
-    hparams_registry = {"model": model_registry}
+    hparams_registry = {"model": model_registry, "train_data": data_registry}
 
     replicate: int = hp.required(doc="Experiment replicate number")
     model_seed: int = hp.required(
@@ -17,6 +18,7 @@ class TrainExp(hp.Hparams):
     sgd_seed: int = hp.required(doc="Multiply by replicate+1 to get seed for SGD noise")
 
     model: ModelHparams = hp.required(doc="Model hparams")
+    train_data: DataHparams = hp.required(doc="Training data hparams")
 
     def validate(self) -> None:
         super().validate()

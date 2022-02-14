@@ -5,3 +5,7 @@ model:
   resnet_cifar:
     num_classes: 10
     num_layers: 20
+train_data:
+  cifar10:
+    train: true
+    shuffle: true
