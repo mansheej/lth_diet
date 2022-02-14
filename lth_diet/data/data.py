@@ -12,17 +12,13 @@ from torch.utils.data import Sampler
 
 @dataclass
 class DataHparams(hp.Hparams, abc.ABC):
-    train: bool = hp.required(doc="True: load training set, False: load test set")
-    shuffle: bool = hp.required(doc="True: reshuffle dataset every epoch")
+    train: bool = hp.required("True: load training set, False: load test set")
+    shuffle: bool = hp.required("True: reshuffle dataset every epoch")
     drop_last: bool = hp.optional(
-        doc=(
-            "If the number of samples is not divisible by the batch size, "
-            + "True: drop the last batch, False: pad the last batch with zeros, "
-            + "default=True"
-        ),
+        "Last incomplete batch: True: drop, False: pad with zeros, Default: True",
         default=True,
     )
-    datadir: Optional[str] = hp.optional("Path to the data directory", default=None)
+    datadir: Optional[str] = hp.optional("Path to data directory", default=None)
 
     @abc.abstractmethod
     def get_dataset(self) -> Dataset:
