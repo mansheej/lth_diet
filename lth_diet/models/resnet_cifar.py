@@ -8,13 +8,11 @@ from composer.models.resnets import CIFAR_ResNet
 
 @dataclass
 class ResNetCIFAR(ModelHparams):
-    num_layers: int = hp.optional(
-        doc="Number of layers, currently supported: {20, 56}, default=20", default=20
-    )
-    num_classes: int = hp.optional(doc="Number of classes, default=10", default=10)
+    num_layers: int = hp.optional("20 or 56, Default: 20", default=20)
+    num_classes: int = hp.optional("Default: 10", default=10)
     initializers: List[Initializer] = hp.optional(
-        doc="Model initialization strategy, default=[KAIMING_NORMAL, BN_UNIFORM]",
-        default_factory=lambda: [Initializer.KAIMING_NORMAL, Initializer.BN_UNIFORM],
+        "Default: [kaiming_normal, bn_uniform]",
+        default_factory=lambda: ["kaiming_normal", "bn_uniform"],
     )
 
     def validate(self):
