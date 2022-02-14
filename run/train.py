@@ -2,7 +2,7 @@ import sys
 import warnings
 from typing import Type
 
-from lth_diet.exps import TrainExp as Experiment
+from lth_diet.exps import TrainExperiment as Experiment
 
 
 def warning_on_one_line(
