@@ -1,0 +1,7 @@
+replicate: 0
+model_seed: 1009
+sgd_seed: 1013
+model: 
+  resnet_cifar:
+    num_classes: 10
+    num_layers: 20
