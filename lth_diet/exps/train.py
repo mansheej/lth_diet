@@ -70,16 +70,16 @@ class TrainExperiment(hp.Hparams):
     max_duration: str = hp.required("Max training time string, ep=epoch, ba=batch")
     train_batch_size: int = hp.required("Total across devices and grad accumulations")
     val_batch_size: int = hp.required("Total across devices and grad accumulations")
-    dataloader: DataloaderHparams = hp.required("Common dataloader hparams")
     optimizer: OptimizerHparams = hp.required("Optimizer hparams")
     schedulers: List[SchedulerHparams] = hp.required("Scheduler sequence")
     loggers: List[LoggerCallbackHparams] = hp.required("Loggers")
+    dataloader: DataloaderHparams = hp.required("Common dataloader hparams")
     # optional parameters
     # training
     algorithms: List[AlgorithmHparams] = hp.optional("Default:[]", default_factory=list)
     callbacks: List[CallbackHparams] = hp.optional("Default: []", default_factory=list)
-    device: DeviceHparams = hp.optional("Default: gpu", default="gpu")
-    precision: Precision = hp.optional("Default: amp", default="amp")
+    device: DeviceHparams = hp.optional("Default: gpu", default=GPUDeviceHparams())
+    precision: Precision = hp.optional("Default: amp", default=Precision.AMP)
     # checkpoint
     load_object_store: Optional[ObjectStoreProviderHparams] = hp.optional(
         "Hparams for connecting to a cloud object store", default=None
