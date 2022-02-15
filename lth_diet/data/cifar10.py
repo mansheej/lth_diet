@@ -39,9 +39,9 @@ class CIFAR10DataHparams(DataHparams):
         dataset: Dataset,
         sampler: Sampler,
         batch_size: int,
-        datdataloader_hparams: DataloaderHparams,
+        dataloader_hparams: DataloaderHparams,
     ) -> DataLoader | DataSpec:
-        data = datdataloader_hparams.initialize_object(
+        data = dataloader_hparams.initialize_object(
             dataset, batch_size=batch_size, sampler=sampler, drop_last=self.drop_last
         )
         return data

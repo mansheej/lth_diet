@@ -30,7 +30,7 @@ class DataHparams(hp.Hparams, abc.ABC):
         dataset: Dataset,
         sampler: Sampler,
         batch_size: int,
-        datdataloader_hparams: DataloaderHparams,
+        dataloader_hparams: DataloaderHparams,
     ) -> DataLoader | DataSpec:
         pass
 

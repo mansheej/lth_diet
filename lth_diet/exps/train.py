@@ -9,7 +9,7 @@ from composer.callbacks import (
     LRMonitorHparams,
     RunDirectoryUploaderHparams,
 )
-from composer.core.types import Precision
+from composer.core.types import DataSpec, Precision
 from composer.datasets import DataloaderHparams
 from composer.loggers import (
     FileLoggerHparams,
@@ -19,9 +19,10 @@ from composer.loggers import (
 )
 from composer.models import ModelHparams
 from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
-from composer.optim.scheduler import MultiStepLRHparams
+from composer.optim.scheduler import ensure_warmup_last, MultiStepLRHparams
+from composer.trainer import Trainer
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
-from composer.utils import dist
+from composer.utils import dist, reproducibility
 from composer.utils.object_store import ObjectStoreProviderHparams
 
 from lth_diet.data import DataHparams, data_registry
@@ -80,10 +81,6 @@ class TrainExperiment(hp.Hparams):
     callbacks: List[CallbackHparams] = hp.optional("Default: []", default_factory=list)
     device: DeviceHparams = hp.optional("Default: gpu", default=GPUDeviceHparams())
     precision: Precision = hp.optional("Default: amp", default=Precision.AMP)
-    # checkpoint
-    load_object_store: Optional[ObjectStoreProviderHparams] = hp.optional(
-        "Hparams for connecting to a cloud object store", default=None
-    )
 
     def validate(self) -> None:
         super().validate()
@@ -99,3 +96,65 @@ class TrainExperiment(hp.Hparams):
 
     def run(self) -> None:
         print(self)
+
+        # get device
+        device = self.device.initialize_object()
+
+        # train data
+        reproducibility.seed_all(42)
+        train_device_batch_size = self.train_batch_size // dist.get_world_size()
+        train_dataloader = self.train_data.initialize_object(
+            train_device_batch_size, self.dataloader
+        )
+        steps_per_epoch = len(train_dataloader)
+        samples_per_epoch = steps_per_epoch * self.train_batch_size
+
+        # validation data
+        val_device_batch_size = self.val_batch_size // dist.get_world_size()
+        val_dataloader = self.val_data.initialize_object(
+            val_device_batch_size, self.dataloader
+        )
+
+        # model
+        model_seed = self.model_seed * (self.replicate + 1)
+        reproducibility.seed_all(model_seed)
+        model = self.model.initialize_object()
+
+        # optimizer and scheduler
+        optimizer = self.optimizer.initialize_object(model.parameters())
+        schedulers = [
+            x.initialize_object(
+                optimizer=optimizer,
+                max_training_duration=self.max_duration,
+                steps_per_epoch=steps_per_epoch,
+                samples_per_epoch=samples_per_epoch,
+                dataset_num_tokens=None,
+            )
+            for x in ensure_warmup_last(self.schedulers)
+        ]
+
+        # algorithms, callbacks, and loggers
+        algorithms = [x.initialize_object() for x in self.algorithms]
+        callbacks = [x.initialize_object() for x in self.callbacks]
+        loggers = [x.initialize_object(self.to_dict()) for x in self.loggers]
+
+        # trainer
+        trainer = Trainer(
+            model=model,
+            train_dataloader=train_dataloader,
+            max_duration=self.max_duration,
+            eval_dataloader=val_dataloader,
+            algorithms=algorithms,
+            optimizers=optimizer,
+            schedulers=schedulers,
+            device=device,
+            precision=self.precision,
+            seed=model_seed,
+            loggers=loggers,
+            callbacks=callbacks,
+        )
+
+        # train
+        sgd_seed = self.sgd_seed * (self.replicate + 1)
+        reproducibility.seed_all(sgd_seed)
+        trainer.fit()
