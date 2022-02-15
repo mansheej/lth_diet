@@ -11,7 +11,12 @@ from composer.callbacks import (
 )
 from composer.core.types import Precision
 from composer.datasets import DataloaderHparams
-from composer.loggers import WandBLoggerHparams
+from composer.loggers import (
+    FileLoggerHparams,
+    LoggerCallbackHparams,
+    TQDMLoggerHparams,
+    WandBLoggerHparams,
+)
 from composer.models import ModelHparams
 from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
 from composer.optim.scheduler import MultiStepLRHparams
@@ -25,6 +30,11 @@ from lth_diet.models import model_registry
 
 optimizer_registry = {"sgd": SGDHparams}
 scheduler_registry = {"multistep": MultiStepLRHparams}
+logger_registry = {
+    "file": FileLoggerHparams,
+    "wandb": WandBLoggerHparams,
+    "tqdm": TQDMLoggerHparams,
+}
 callback_registry = {
     "lr_monitor": LRMonitorHparams,
     "grad_monitor": GradMonitorHparams,
@@ -37,6 +47,7 @@ hparams_registry = {
     "val_data": data_registry,
     "optimizer": optimizer_registry,
     "schedulers": scheduler_registry,
+    "loggers": logger_registry,
     "algorithms": get_algorithm_registry(),
     "callbacks": callback_registry,
     "device": device_registry,
@@ -62,7 +73,7 @@ class TrainExperiment(hp.Hparams):
     dataloader: DataloaderHparams = hp.required("Common dataloader hparams")
     optimizer: OptimizerHparams = hp.required("Optimizer hparams")
     schedulers: List[SchedulerHparams] = hp.required("Scheduler sequence")
-    logger: WandBLoggerHparams = hp.required("WandB config")
+    loggers: List[LoggerCallbackHparams] = hp.required("Loggers")
     # optional parameters
     # training
     algorithms: List[AlgorithmHparams] = hp.optional("Default:[]", default_factory=list)
@@ -73,8 +84,6 @@ class TrainExperiment(hp.Hparams):
     load_object_store: Optional[ObjectStoreProviderHparams] = hp.optional(
         "Hparams for connecting to a cloud object store", default=None
     )
-    exp_folder: Optional[str] = hp.optional("Exp dir rel to run dir", default=None)
-    save_interval: str = hp.optional("Time string, Default: 1ep", default="1ep")
 
     def validate(self) -> None:
         super().validate()
