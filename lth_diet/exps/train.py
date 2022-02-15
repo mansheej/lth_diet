@@ -30,7 +30,6 @@ callback_registry = {
     "run_directory_uploader": RunDirectoryUploaderHparams,
 }
 device_registry = {"gpu": GPUDeviceHparams, "cpu": CPUDeviceHparams}
-
 hparams_registry = {
     "model": model_registry,
     "train_data": data_registry,
@@ -56,31 +55,31 @@ class TrainExperiment(hp.Hparams):
     train_data: DataHparams = hp.required("Training data hparams")
     val_data: DataHparams = hp.required("Validation data hparams")
     # training
+    max_duration: str = hp.required("Max training time string, ep=epoch, ba=batch")
     train_batch_size: int = hp.required("Total across devices and grad accumulations")
     val_batch_size: int = hp.required("Total across devices and grad accumulations")
-    max_duration: str = hp.required("Max train time string, epoch=ep, batch=ba")
+    dataloader: DataloaderHparams = hp.required("Common dataloader hparams")
     optimizer: OptimizerHparams = hp.required("Optimizer hparams")
     schedulers: List[SchedulerHparams] = hp.required("Scheduler sequence")
     logger: WandBLoggerHparams = hp.required("WandB config")
-    dataloader: DataloaderHparams = hp.required("Common dataloader hparams")
     # optional parameters
     # training
-    algorithms: List[AlgorithmHparams] = hp.optional("Def: []", default_factory=list)
+    algorithms: List[AlgorithmHparams] = hp.optional("Default:[]", default_factory=list)
     callbacks: List[CallbackHparams] = hp.optional("Default: []", default_factory=list)
-    device: DeviceHparams = hp.optional("Device hparams, Default: gpu", default="gpu")
+    device: DeviceHparams = hp.optional("Default: gpu", default="gpu")
+    precision: Precision = hp.optional("Default: amp", default="amp")
     grad_clip_norm: Optional[float] = hp.optional("Max grad norm", default=None)
     validate_every_n_epochs: int = hp.optional("Default: 1", default=1)
     validate_every_n_batches: int = hp.optional("Default: -1", default=-1)
-    precision: Precision = hp.optional("Default: amp", default="amp")
     # load checkpoint
     load_path: Optional[str] = hp.optional("Local disk or cloud bucket", default=None)
     load_object_store: Optional[ObjectStoreProviderHparams] = hp.optional(
         "Hparams for connecting to a cloud object store", default=None
     )
-    load_weights_only: bool = hp.optional("Default: True", default=False)
+    load_weights_only: bool = hp.optional("Default: False", default=False)
     load_strict_model_weights: bool = hp.optional("Default: True", default=True)
     # save checkpoint
-    save_folder: Optional[str] = hp.optional("Folder rel to run dir", default=None)
+    save_folder: Optional[str] = hp.optional("Exp dir rel to run dir", default=None)
     save_interval: str = hp.optional("Time string, Default: 1ep", default="1ep")
 
     def run(self) -> None:
