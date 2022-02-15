@@ -16,6 +16,7 @@ from composer.models import ModelHparams
 from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
 from composer.optim.scheduler import MultiStepLRHparams
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
+from composer.utils import dist
 from composer.utils.object_store import ObjectStoreProviderHparams
 
 from lth_diet.data import DataHparams, data_registry
@@ -81,6 +82,18 @@ class TrainExperiment(hp.Hparams):
     # save checkpoint
     save_folder: Optional[str] = hp.optional("Exp dir rel to run dir", default=None)
     save_interval: str = hp.optional("Time string, Default: 1ep", default="1ep")
+
+    def validate(self) -> None:
+        super().validate()
+        world_size = dist.get_world_size()
+        if self.train_batch_size % world_size != 0:
+            raise ValueError(
+                f"Batch size ({self.train_batch_size}) not divisible by the total number of processes ({world_size})."
+            )
+        if self.val_batch_size % world_size != 0:
+            raise ValueError(
+                f"Eval batch size ({self.val_batch_size}) not divisible by the total number of processes ({world_size})."
+            )
 
     def run(self) -> None:
         print(self)
