@@ -69,18 +69,11 @@ class TrainExperiment(hp.Hparams):
     callbacks: List[CallbackHparams] = hp.optional("Default: []", default_factory=list)
     device: DeviceHparams = hp.optional("Default: gpu", default="gpu")
     precision: Precision = hp.optional("Default: amp", default="amp")
-    grad_clip_norm: Optional[float] = hp.optional("Max grad norm", default=None)
-    validate_every_n_epochs: int = hp.optional("Default: 1", default=1)
-    validate_every_n_batches: int = hp.optional("Default: -1", default=-1)
-    # load checkpoint
-    load_path: Optional[str] = hp.optional("Local disk or cloud bucket", default=None)
+    # checkpoint
     load_object_store: Optional[ObjectStoreProviderHparams] = hp.optional(
         "Hparams for connecting to a cloud object store", default=None
     )
-    load_weights_only: bool = hp.optional("Default: False", default=False)
-    load_strict_model_weights: bool = hp.optional("Default: True", default=True)
-    # save checkpoint
-    save_folder: Optional[str] = hp.optional("Exp dir rel to run dir", default=None)
+    exp_folder: Optional[str] = hp.optional("Exp dir rel to run dir", default=None)
     save_interval: str = hp.optional("Time string, Default: 1ep", default="1ep")
 
     def validate(self) -> None:
