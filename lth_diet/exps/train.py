@@ -34,7 +34,7 @@ device_registry = {"gpu": GPUDeviceHparams, "cpu": CPUDeviceHparams}
 hparams_registry = {
     "model": model_registry,
     "train_data": data_registry,
-    "eval_data": data_registry,
+    "val_data": data_registry,
     "optimizer": optimizer_registry,
     "schedulers": scheduler_registry,
     "algorithms": get_algorithm_registry(),
@@ -54,10 +54,10 @@ class TrainExperiment(hp.Hparams):
     # model and data
     model: ModelHparams = hp.required("Model hparams")
     train_data: DataHparams = hp.required("Training data hparams")
-    eval_data: DataHparams = hp.required("Test data hparams")
+    val_data: DataHparams = hp.required("Validation data hparams")
     # training
     train_batch_size: int = hp.required("Total across devices and grad accumulations")
-    eval_batch_size: int = hp.required("Total across devices and grad accumulations")
+    val_batch_size: int = hp.required("Total across devices and grad accumulations")
     max_duration: str = hp.required("Max train time string, epoch=ep, batch=ba")
     optimizer: OptimizerHparams = hp.required("Optimizer hparams")
     schedulers: List[SchedulerHparams] = hp.required("Scheduler sequence")
