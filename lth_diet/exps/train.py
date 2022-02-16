@@ -1,5 +1,5 @@
 from dataclasses import dataclass
-from typing import List, Optional
+from typing import List
 
 import yahp as hp
 from composer.algorithms import AlgorithmHparams, get_algorithm_registry
@@ -9,7 +9,7 @@ from composer.callbacks import (
     LRMonitorHparams,
     RunDirectoryUploaderHparams,
 )
-from composer.core.types import DataSpec, Precision
+from composer.core.types import Precision
 from composer.datasets import DataloaderHparams
 from composer.loggers import (
     FileLoggerHparams,
@@ -23,7 +23,6 @@ from composer.optim.scheduler import ensure_warmup_last, MultiStepLRHparams
 from composer.trainer import Trainer
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
 from composer.utils import dist, reproducibility
-from composer.utils.object_store import ObjectStoreProviderHparams
 
 from lth_diet.data import DataHparams, data_registry
 from lth_diet.models import model_registry
@@ -73,12 +72,14 @@ class TrainExperiment(hp.Hparams):
     val_batch_size: int = hp.required("Total across devices and grad accumulations")
     optimizer: OptimizerHparams = hp.required("Optimizer hparams")
     schedulers: List[SchedulerHparams] = hp.required("Scheduler sequence")
-    loggers: List[LoggerCallbackHparams] = hp.required("Loggers")
     dataloader: DataloaderHparams = hp.required("Common dataloader hparams")
     # optional parameters
     # training
     algorithms: List[AlgorithmHparams] = hp.optional("Default:[]", default_factory=list)
     callbacks: List[CallbackHparams] = hp.optional("Default: []", default_factory=list)
+    loggers: List[LoggerCallbackHparams] = hp.optional(
+        "Default: [tqdm]", default_factory=lambda: [TQDMLoggerHparams()]
+    )
     device: DeviceHparams = hp.optional("Default: gpu", default=GPUDeviceHparams())
     precision: Precision = hp.optional("Default: amp", default=Precision.AMP)
 
@@ -95,8 +96,6 @@ class TrainExperiment(hp.Hparams):
             )
 
     def run(self) -> None:
-        print(self)
-
         # get device
         device = self.device.initialize_object()
 
@@ -106,9 +105,6 @@ class TrainExperiment(hp.Hparams):
         train_dataloader = self.train_data.initialize_object(
             train_device_batch_size, self.dataloader
         )
-        steps_per_epoch = len(train_dataloader)
-        samples_per_epoch = steps_per_epoch * self.train_batch_size
-
         # validation data
         val_device_batch_size = self.val_batch_size // dist.get_world_size()
         val_dataloader = self.val_data.initialize_object(
@@ -122,6 +118,8 @@ class TrainExperiment(hp.Hparams):
 
         # optimizer and scheduler
         optimizer = self.optimizer.initialize_object(model.parameters())
+        steps_per_epoch = len(train_dataloader)
+        samples_per_epoch = steps_per_epoch * self.train_batch_size
         schedulers = [
             x.initialize_object(
                 optimizer=optimizer,
