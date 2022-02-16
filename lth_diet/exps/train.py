@@ -85,15 +85,17 @@ class TrainExperiment(hp.Hparams):
 
     def validate(self) -> None:
         super().validate()
+        if self.replicate < 0:
+            raise ValueError(f"Replicate must be positive")
+        if self.model_seed <= 0:
+            raise ValueError(f"Model seed must be non-negative")
+        if self.sgd_seed <= 0:
+            raise ValueError(f"SGD seed must be non-negative")
         world_size = dist.get_world_size()
         if self.train_batch_size % world_size != 0:
-            raise ValueError(
-                f"Batch size ({self.train_batch_size}) not divisible by the total number of processes ({world_size})."
-            )
+            raise ValueError(f"Train batch size not divisible by number of processes")
         if self.val_batch_size % world_size != 0:
-            raise ValueError(
-                f"Eval batch size ({self.val_batch_size}) not divisible by the total number of processes ({world_size})."
-            )
+            raise ValueError(f"Val batch size not divisible by number of processes")
 
     def run(self) -> None:
         # get device
