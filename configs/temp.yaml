@@ -1,7 +1,6 @@
 # experiment
 replicate: 0
-model_seed: 1009
-sgd_seed: 1013
+seed: 2069
 # model and data
 model:
   resnet_cifar:

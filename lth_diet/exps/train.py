@@ -60,8 +60,7 @@ class TrainExperiment(hp.Hparams):
     # required parameters
     # experiment
     replicate: int = hp.required("Replicate number")
-    model_seed: int = hp.required("Init model with model_seed * (replicate + 1)")
-    sgd_seed: int = hp.required("Init SGD noise with sgd_seed * (replicate + 1)")
+    seed: int = hp.required("seed = seed * (replicate + 1)")
     # model and data
     model: ModelHparams = hp.required("Model hparams")
     train_data: DataHparams = hp.required("Training data hparams")
@@ -87,10 +86,8 @@ class TrainExperiment(hp.Hparams):
         super().validate()
         if self.replicate < 0:
             raise ValueError(f"Replicate must be positive")
-        if self.model_seed <= 0:
-            raise ValueError(f"Model seed must be non-negative")
-        if self.sgd_seed <= 0:
-            raise ValueError(f"SGD seed must be non-negative")
+        if self.seed <= 0:
+            raise ValueError(f"Seed must be non-negative")
         world_size = dist.get_world_size()
         if self.train_batch_size % world_size != 0:
             raise ValueError(f"Train batch size not divisible by number of processes")
@@ -102,7 +99,7 @@ class TrainExperiment(hp.Hparams):
         device = self.device.initialize_object()
 
         # train data
-        reproducibility.seed_all(42)
+        reproducibility.seed_all(42)  # prevent unwanted randomness in data generation
         train_device_batch_size = self.train_batch_size // dist.get_world_size()
         train_dataloader = self.train_data.initialize_object(
             train_device_batch_size, self.dataloader
@@ -114,8 +111,8 @@ class TrainExperiment(hp.Hparams):
         )
 
         # model
-        model_seed = self.model_seed * (self.replicate + 1)
-        reproducibility.seed_all(model_seed)
+        seed = self.seed * (self.replicate + 1)
+        reproducibility.seed_all(seed)
         model = self.model.initialize_object()
 
         # optimizer and scheduler
@@ -136,7 +133,7 @@ class TrainExperiment(hp.Hparams):
         # algorithms, callbacks, and loggers
         algorithms = [x.initialize_object() for x in self.algorithms]
         callbacks = [x.initialize_object() for x in self.callbacks]
-        loggers = [x.initialize_object(self.to_dict()) for x in self.loggers]
+        loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
 
         # trainer
         trainer = Trainer(
@@ -149,12 +146,10 @@ class TrainExperiment(hp.Hparams):
             schedulers=schedulers,
             device=device,
             precision=self.precision,
-            seed=model_seed,
+            seed=seed,
             loggers=loggers,
             callbacks=callbacks,
         )
 
         # train
-        sgd_seed = self.sgd_seed * (self.replicate + 1)
-        reproducibility.seed_all(sgd_seed)
         trainer.fit()
