@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from pathlib import Path
 
 from composer.core.types import DataLoader, DataSpec, Dataset
 from composer.datasets.dataloader import DataloaderHparams
@@ -14,7 +15,7 @@ from lth_diet.data.data import DataHparams
 class CIFAR10DataHparams(DataHparams):
     def get_dataset(self) -> Dataset:
         cifar10_mean, cifar10_std = [0.4914, 0.4822, 0.4465], [0.247, 0.243, 0.261]
-        datadir = self.datadir if self.datadir else "data/cifar10"
+        datadir = Path(self.datadir) / "cifar10"
         if self.train:
             transform = transforms.Compose(
                 [
