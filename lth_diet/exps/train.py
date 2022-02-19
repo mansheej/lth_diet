@@ -21,7 +21,7 @@ from composer.loggers import (
 )
 from composer.models import ModelHparams
 from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
-from composer.optim.scheduler import ensure_warmup_last, MultiStepLRHparams
+from composer.optim.scheduler import MultiStepLRHparams
 from composer.trainer import Trainer
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
 from composer.utils import dist, reproducibility
@@ -125,18 +125,7 @@ class TrainExperiment(hp.Hparams):
 
         # optimizer and scheduler
         optimizer = self.optimizer.initialize_object(model.parameters())
-        steps_per_epoch = len(train_dataloader)
-        samples_per_epoch = steps_per_epoch * self.train_batch_size
-        schedulers = [
-            x.initialize_object(
-                optimizer=optimizer,
-                max_training_duration=self.max_duration,
-                steps_per_epoch=steps_per_epoch,
-                samples_per_epoch=samples_per_epoch,
-                dataset_num_tokens=None,
-            )
-            for x in ensure_warmup_last(self.schedulers)
-        ]
+        schedulers = [x.initialize_object() for x in self.schedulers]
 
         # algorithms, callbacks, and loggers
         algorithms = [x.initialize_object() for x in self.algorithms]

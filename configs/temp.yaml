@@ -31,7 +31,6 @@ schedulers:
         - 31200ba
         - 46800ba
       gamma: 0.1
-      interval: batch
 algorithms:
   - channels_last: {}
 callbacks:
