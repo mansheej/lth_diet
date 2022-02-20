@@ -19,7 +19,6 @@ from composer.loggers import (
     TQDMLoggerHparams,
     WandBLoggerHparams,
 )
-from composer.models import ModelHparams
 from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
 from composer.optim.scheduler import MultiStepLRHparams
 from composer.trainer import Trainer
@@ -27,7 +26,7 @@ from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceH
 from composer.utils import dist, reproducibility
 
 from lth_diet.data import DataHparams, data_registry
-from lth_diet.models import model_registry
+from lth_diet.models import ClassifierHparams, model_registry
 
 
 dotenv.load_dotenv()
@@ -66,7 +65,7 @@ class TrainExperiment(hp.Hparams):
     replicate: int = hp.required("Replicate number")
     seed: int = hp.required("seed = seed * (replicate + 1)")
     # model and data
-    model: ModelHparams = hp.required("Model hparams")
+    model: ClassifierHparams = hp.required("Model hparams")
     train_data: DataHparams = hp.required("Training data hparams")
     val_data: DataHparams = hp.required("Validation data hparams")
     # training
