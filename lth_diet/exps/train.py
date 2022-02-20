@@ -1,7 +1,7 @@
 from dataclasses import dataclass
 import dotenv
 import os
-from typing import List
+from typing import List, Optional
 
 import yahp as hp
 from composer.algorithms import AlgorithmHparams, get_algorithm_registry
@@ -85,6 +85,8 @@ class TrainExperiment(hp.Hparams):
     )
     device: DeviceHparams = hp.optional("Default: gpu", default=GPUDeviceHparams())
     precision: Precision = hp.optional("Default: amp", default=Precision.AMP)
+    # checkpoints
+    save_interval: Optional[str] = hp.optional("Default: None (Nba=1ep)", default=None)
 
     def validate(self) -> None:
         super().validate()
@@ -132,6 +134,11 @@ class TrainExperiment(hp.Hparams):
         callbacks = [x.initialize_object() for x in self.callbacks]
         loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
 
+        # checkpointing
+        save_interval = self.save_interval
+        if save_interval is None:
+            save_interval = f"{len(train_dataloader)}ba"
+
         # trainer
         trainer = Trainer(
             model=model,
@@ -146,6 +153,8 @@ class TrainExperiment(hp.Hparams):
             seed=seed,
             loggers=loggers,
             callbacks=callbacks,
+            save_folder="temp",
+            save_interval=save_interval,
         )
 
         # train

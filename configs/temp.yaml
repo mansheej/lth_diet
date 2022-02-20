@@ -35,11 +35,16 @@ algorithms:
   - channels_last: {}
 callbacks:
   - lr_monitor: {}
+  - run_directory_uploader:
+      provider: google_storage
+      container: prunes
+      key_environ: GCS_KEY
 loggers:
   - tqdm: {}
 device: 
   gpu: {}
 precision: amp
+save_interval: null
 dataloader:
   num_workers: 8
   prefetch_factor: 2
