@@ -1,18 +1,18 @@
 from dataclasses import dataclass
-from typing import List
+from typing import List, Optional
 
 import yahp as hp
-from composer.models import ComposerClassifier, Initializer, ModelHparams
+from composer.models import ComposerClassifier, Initializer
 from composer.models.resnets import CIFAR_ResNet
+
+from lth_diet.models.classifier import ClassifierHparams
 
 
 @dataclass
-class ResNetCIFAR(ModelHparams):
-    num_layers: int = hp.optional("20 or 56, Default: 20", default=20)
-    num_classes: int = hp.optional("Default: 10", default=10)
-    initializers: List[Initializer] = hp.optional(
-        "Default: [kaiming_normal, bn_uniform]",
-        default_factory=lambda: ["kaiming_normal", "bn_uniform"],
+class ResNetCIFAR(ClassifierHparams):
+    num_layers: int = hp.required("Number of layers: 20 | 56")
+    initializers: Optional[List[Initializer]] = hp.optional(
+        "Default: kaiming_normal, bn_uniform", default=None
     )
 
     def validate(self):
@@ -21,9 +21,12 @@ class ResNetCIFAR(ModelHparams):
             raise ValueError("Currently supported: num_layers in [20, 56]")
 
     def initialize_object(self) -> ComposerClassifier:
+        initializers = self.initializers
+        if initializers is None:
+            initializers = [Initializer.KAIMING_NORMAL, Initializer.BN_UNIFORM]
         model = CIFAR_ResNet.get_model_from_name(
             model_name=f"cifar_resnet_{self.num_layers}",
-            initializers=self.initializers,
+            initializers=initializers,
             outputs=self.num_classes,
         )
         return ComposerClassifier(module=model)
