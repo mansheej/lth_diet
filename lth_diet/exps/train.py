@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 import dotenv
-import os
 from typing import List, Optional
 
 import yahp as hp
@@ -105,15 +104,11 @@ class TrainExperiment(hp.Hparams):
 
         # train data
         reproducibility.seed_all(42)  # prevent unwanted randomness in data generation
-        if self.train_data.datadir is None:
-            self.train_data.datadir = os.environ["DATADIR"]
         train_device_batch_size = self.train_batch_size // dist.get_world_size()
         train_dataloader = self.train_data.initialize_object(
             train_device_batch_size, self.dataloader
         )
         # validation data
-        if self.val_data.datadir is None:
-            self.val_data.datadir = os.environ["DATADIR"]
         val_device_batch_size = self.val_batch_size // dist.get_world_size()
         val_dataloader = self.val_data.initialize_object(
             val_device_batch_size, self.dataloader
