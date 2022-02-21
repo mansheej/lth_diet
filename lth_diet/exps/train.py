@@ -74,7 +74,7 @@ class TrainExperiment(hp.Hparams):
     replicate: int = hp.optional("Replicate number. Default: 0", default=0)
     seed: int = hp.optional("seed = seed * (replicate + 1). Default: 1", default=1)
     algorithms: Optional[List[AlgorithmHparams]] = hp.optional("None: []", default=None)
-    callbacks: List[CallbackHparams] = hp.optional("Default: []", default_factory=list)
+    callbacks: Optional[List[CallbackHparams]] = hp.optional("None: []", default=None)
     loggers: List[LoggerCallbackHparams] = hp.optional(
         "Default: [tqdm]", default_factory=lambda: [TQDMLoggerHparams()]
     )
@@ -84,9 +84,9 @@ class TrainExperiment(hp.Hparams):
 
     @property
     def name(self) -> str:
-        ignore = ["val_batch_size", "dataloader", "replicate", "callbacks", "loggers"]
-        ignore += ["device", "precision", "save_interval"]
-        name = utils.get_hparams_name(self, "train", ignore)
+        ignore = ["val_batch_size", "dataloader", "replicate", "loggers", "device"]
+        ignore += ["precision", "save_interval"]
+        name = utils.get_hparams_name(self, "Train", ignore)
         return name
 
     def validate(self) -> None:
@@ -129,6 +129,7 @@ class TrainExperiment(hp.Hparams):
         # algorithms, callbacks, and loggers
         algorithms = self.algorithms if self.algorithms else []
         algorithms = [x.initialize_object() for x in algorithms]
+        callbacks = self.callbacks if self.callbacks else []
         callbacks = [x.initialize_object() for x in self.callbacks]
         loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
 

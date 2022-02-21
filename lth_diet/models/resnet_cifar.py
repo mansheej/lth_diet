@@ -18,7 +18,7 @@ class ResNetCIFAR(ClassifierHparams):
 
     @property
     def name(self) -> str:
-        return utils.get_hparams_name(self, "resnet_cifar", [])
+        return utils.get_hparams_name(self, "ResNetCIFAR", [])
 
     def validate(self):
         super().validate()

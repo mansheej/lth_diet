@@ -18,7 +18,7 @@ class CIFAR10DataHparams(DataHparams):
     @property
     def name(self) -> str:
         ignore = ["datadir"]
-        return utils.get_hparams_name(self, "cifar10", ignore)
+        return utils.get_hparams_name(self, "CIFAR10", ignore)
 
     def get_dataset(self) -> Dataset:
         cifar10_mean, cifar10_std = [0.4914, 0.4822, 0.4465], [0.247, 0.243, 0.261]
