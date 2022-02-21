@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-import dotenv
 from typing import List, Optional
 
 import yahp as hp
@@ -28,8 +27,6 @@ from lth_diet.data import DataHparams, data_registry
 from lth_diet.models import ClassifierHparams, model_registry
 from lth_diet.utils import utils
 
-
-dotenv.load_dotenv()
 
 optimizer_registry = {"sgd": SGDHparams}
 scheduler_registry = {"multistep": MultiStepLRHparams}
@@ -127,10 +124,10 @@ class TrainExperiment(hp.Hparams):
         schedulers = [x.initialize_object() for x in self.schedulers]
 
         # algorithms, callbacks, and loggers
-        algorithms = self.algorithms if self.algorithms else []
+        algorithms = [] if self.algorithms is None else self.algorithms
         algorithms = [x.initialize_object() for x in algorithms]
-        callbacks = self.callbacks if self.callbacks else []
-        callbacks = [x.initialize_object() for x in self.callbacks]
+        callbacks = [] if self.callbacks is None else self.callbacks
+        callbacks = [x.initialize_object() for x in callbacks]
         loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
 
         # checkpointing

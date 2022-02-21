@@ -1,5 +1,9 @@
+import dotenv
 import sys
 from lth_diet.exps import TrainExperiment as Experiment
+
+
+dotenv.load_dotenv()
 
 
 def main() -> None:
