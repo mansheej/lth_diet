@@ -81,8 +81,8 @@ class TrainExperiment(hp.Hparams):
 
     @property
     def name(self) -> str:
-        ignore = ["val_batch_size", "dataloader", "replicate", "loggers", "device"]
-        ignore += ["precision", "save_interval"]
+        ignore = ["val_batch_size", "dataloader", "replicate", "callbacks", "loggers"]
+        ignore += ["device", "precision", "save_interval"]
         name = utils.get_hparams_name(self, "Train", ignore)
         return name
 
@@ -98,10 +98,7 @@ class TrainExperiment(hp.Hparams):
         if self.val_batch_size % world_size != 0:
             raise ValueError(f"Val batch size not divisible by number of processes")
 
-    def run(self) -> None:
-        # experiment id
-        exp_id = utils.get_hash(self.name)
-
+    def _get_trainer(self, exp_id: str) -> Trainer:
         # get device
         device = self.device.initialize_object()
 
@@ -156,6 +153,9 @@ class TrainExperiment(hp.Hparams):
             save_folder=save_folder,
             save_interval=save_interval,
         )
+        return trainer
 
-        # train
+    def run(self) -> None:
+        exp_id = utils.get_hash(self.name)
+        trainer = self._get_trainer(exp_id)
         trainer.fit()
