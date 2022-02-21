@@ -1,11 +1,9 @@
-# experiment
-replicate: 0
-seed: 2069
-# model and data
+# model
 model:
   resnet_cifar:
-    num_layers: 20
     num_classes: 10
+    num_layers: 20
+# data
 train_data:
   cifar10:
     train: true
@@ -17,6 +15,7 @@ val_data:
     shuffle: false
     drop_last: false
 # training
+seed: 2069
 max_duration: 160ep
 train_batch_size: 128
 val_batch_size: 1000
@@ -31,23 +30,8 @@ schedulers:
         - 31200ba
         - 46800ba
       gamma: 0.1
-algorithms:
-  - channels_last: {}
-callbacks:
-  - lr_monitor: {}
-  - run_directory_uploader:
-      provider: google_storage
-      container: prunes
-      key_environ: GCS_KEY
-loggers:
-  - tqdm: {}
-device: 
-  gpu: {}
-precision: amp
-save_interval: null
 dataloader:
   num_workers: 8
   prefetch_factor: 2
   persistent_workers: false
   pin_memory: true
-  timeout: 0

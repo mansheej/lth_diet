@@ -26,6 +26,7 @@ from composer.utils import dist, reproducibility
 
 from lth_diet.data import DataHparams, data_registry
 from lth_diet.models import ClassifierHparams, model_registry
+from lth_diet.utils import utils
 
 
 dotenv.load_dotenv()
@@ -60,14 +61,9 @@ hparams_registry = {
 class TrainExperiment(hp.Hparams):
     hparams_registry = hparams_registry
     # required parameters
-    # experiment
-    replicate: int = hp.required("Replicate number")
-    seed: int = hp.required("seed = seed * (replicate + 1)")
-    # model and data
-    model: ClassifierHparams = hp.required("Model hparams")
+    model: ClassifierHparams = hp.required("Classifier hparams")
     train_data: DataHparams = hp.required("Training data hparams")
     val_data: DataHparams = hp.required("Validation data hparams")
-    # training
     max_duration: str = hp.required("Max training time string, ep=epoch, ba=batch")
     train_batch_size: int = hp.required("Total across devices and grad accumulations")
     val_batch_size: int = hp.required("Total across devices and grad accumulations")
@@ -75,16 +71,23 @@ class TrainExperiment(hp.Hparams):
     schedulers: List[SchedulerHparams] = hp.required("Scheduler sequence")
     dataloader: DataloaderHparams = hp.required("Common dataloader hparams")
     # optional parameters
-    # training
-    algorithms: List[AlgorithmHparams] = hp.optional("Default:[]", default_factory=list)
+    replicate: int = hp.optional("Replicate number. Default: 0", default=0)
+    seed: int = hp.optional("seed = seed * (replicate + 1). Default: 1", default=1)
+    algorithms: Optional[List[AlgorithmHparams]] = hp.optional("None: []", default=None)
     callbacks: List[CallbackHparams] = hp.optional("Default: []", default_factory=list)
     loggers: List[LoggerCallbackHparams] = hp.optional(
         "Default: [tqdm]", default_factory=lambda: [TQDMLoggerHparams()]
     )
     device: DeviceHparams = hp.optional("Default: gpu", default=GPUDeviceHparams())
     precision: Precision = hp.optional("Default: amp", default=Precision.AMP)
-    # checkpoints
-    save_interval: Optional[str] = hp.optional("Default: None (Nba=1ep)", default=None)
+    save_interval: Optional[str] = hp.optional("Default (None): Nba=1ep", default=None)
+
+    @property
+    def name(self) -> str:
+        ignore = ["val_batch_size", "dataloader", "replicate", "callbacks", "loggers"]
+        ignore += ["device", "precision", "save_interval"]
+        name = utils.get_hparams_name(self, "train", ignore)
+        return name
 
     def validate(self) -> None:
         super().validate()
@@ -124,7 +127,8 @@ class TrainExperiment(hp.Hparams):
         schedulers = [x.initialize_object() for x in self.schedulers]
 
         # algorithms, callbacks, and loggers
-        algorithms = [x.initialize_object() for x in self.algorithms]
+        algorithms = self.algorithms if self.algorithms else []
+        algorithms = [x.initialize_object() for x in algorithms]
         callbacks = [x.initialize_object() for x in self.callbacks]
         loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
 
@@ -147,7 +151,7 @@ class TrainExperiment(hp.Hparams):
             seed=seed,
             loggers=loggers,
             callbacks=callbacks,
-            save_folder="temp",
+            # save_folder="temp",
             save_interval=save_interval,
         )
 

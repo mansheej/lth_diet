@@ -6,6 +6,7 @@ from composer.models import ComposerClassifier, Initializer
 from composer.models.resnets import CIFAR_ResNet
 
 from lth_diet.models.classifier import ClassifierHparams
+from lth_diet.utils import utils
 
 
 @dataclass
@@ -14,6 +15,10 @@ class ResNetCIFAR(ClassifierHparams):
     initializers: Optional[List[Initializer]] = hp.optional(
         "Default: kaiming_normal, bn_uniform", default=None
     )
+
+    @property
+    def name(self) -> str:
+        return utils.get_hparams_name(self, "resnet_cifar", [])
 
     def validate(self):
         super().validate()
