@@ -1,5 +1,6 @@
 from dataclasses import fields
 from enum import Enum
+import hashlib
 from typing import List, Union
 import yahp as hp
 
@@ -29,3 +30,7 @@ def get_hparams_name(hparams: hp.Hparams, prefix: str, ignore_fields: List[str])
     ]
     name = f"{prefix}({','.join(field_names)})"
     return name
+
+
+def get_hash(string: str) -> str:
+    return hashlib.md5(string.encode("utf-8")).hexdigest()

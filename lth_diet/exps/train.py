@@ -99,6 +99,9 @@ class TrainExperiment(hp.Hparams):
             raise ValueError(f"Val batch size not divisible by number of processes")
 
     def run(self) -> None:
+        # experiment id
+        exp_id = utils.get_hash(self.name)
+
         # get device
         device = self.device.initialize_object()
 
@@ -131,6 +134,7 @@ class TrainExperiment(hp.Hparams):
         loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
 
         # checkpointing
+        save_folder = f"{exp_id}/main"
         save_interval = self.save_interval
         if save_interval is None:
             save_interval = f"{len(train_dataloader)}ba"
@@ -149,7 +153,7 @@ class TrainExperiment(hp.Hparams):
             seed=seed,
             loggers=loggers,
             callbacks=callbacks,
-            # save_folder="temp",
+            save_folder=save_folder,
             save_interval=save_interval,
         )
 
