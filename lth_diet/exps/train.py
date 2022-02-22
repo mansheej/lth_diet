@@ -21,7 +21,7 @@ from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
 from composer.optim.scheduler import MultiStepLRHparams
 from composer.trainer import Trainer
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
-from composer.utils import dist, reproducibility
+from composer.utils import dist, reproducibility, run_directory
 
 from lth_diet.data import DataHparams, data_registry
 from lth_diet.models import ClassifierHparams, model_registry
@@ -73,7 +73,7 @@ class TrainExperiment(hp.Hparams):
     algorithms: Optional[List[AlgorithmHparams]] = hp.optional("None: []", default=None)
     callbacks: Optional[List[CallbackHparams]] = hp.optional("None: []", default=None)
     loggers: List[LoggerCallbackHparams] = hp.optional(
-        "Default: [tqdm]", default_factory=lambda: [TQDMLoggerHparams()]
+        "Default: [file]", default_factory=lambda: [FileLoggerHparams()]
     )
     device: DeviceHparams = hp.optional("Default: gpu", default=GPUDeviceHparams())
     precision: Precision = hp.optional("Default: amp", default=Precision.AMP)
@@ -131,7 +131,7 @@ class TrainExperiment(hp.Hparams):
         loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
 
         # checkpointing
-        save_folder = f"{exp_id}/main"
+        save_folder = f"{exp_id}/replicate_{self.replicate}/main"
         save_interval = self.save_interval
         if save_interval is None:
             save_interval = f"{len(train_dataloader)}ba"
@@ -150,6 +150,7 @@ class TrainExperiment(hp.Hparams):
             seed=seed,
             loggers=loggers,
             callbacks=callbacks,
+            load_path=f"{run_directory.get_run_directory()}/{save_folder}/it1560.pt",
             save_folder=save_folder,
             save_interval=save_interval,
         )
