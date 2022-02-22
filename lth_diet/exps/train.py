@@ -66,17 +66,19 @@ class TrainExperiment(hp.Hparams):
     val_batch_size: int = hp.required("Total across devices and grad accumulations")
     optimizer: OptimizerHparams = hp.required("Optimizer hparams")
     schedulers: List[SchedulerHparams] = hp.required("Scheduler sequence")
-    dataloader: DataloaderHparams = hp.required("Common dataloader hparams")
     # optional parameters
     replicate: int = hp.optional("Replicate number. Default: 0", default=0)
     seed: int = hp.optional("seed = seed * (replicate + 1). Default: 1", default=1)
     algorithms: Optional[List[AlgorithmHparams]] = hp.optional("None: []", default=None)
-    callbacks: Optional[List[CallbackHparams]] = hp.optional("None: []", default=None)
+    callbacks: List[CallbackHparams] = hp.optional("Default: []", default_factory=list)
     loggers: List[LoggerCallbackHparams] = hp.optional(
         "Default: [file]", default_factory=lambda: [FileLoggerHparams()]
     )
     device: DeviceHparams = hp.optional("Default: gpu", default=GPUDeviceHparams())
     precision: Precision = hp.optional("Default: amp", default=Precision.AMP)
+    dataloader: Optional[DataloaderHparams] = hp.optional(
+        "Common dataloader hparams. Default (None): Pytorch defaults", default=None
+    )
     save_interval: Optional[str] = hp.optional("Default (None): Nba=1ep", default=None)
     get_name: bool = hp.optional("Get exp and hash name. Default: False", default=False)
 
@@ -105,14 +107,17 @@ class TrainExperiment(hp.Hparams):
 
         # train data
         reproducibility.seed_all(42)  # prevent unwanted randomness in data generation
+        dataloader = self.dataloader
+        if dataloader is None:
+            dataloader = DataloaderHparams(persistent_workers=False)
         train_device_batch_size = self.train_batch_size // dist.get_world_size()
         train_dataloader = self.train_data.initialize_object(
-            train_device_batch_size, self.dataloader
+            train_device_batch_size, dataloader
         )
         # validation data
         val_device_batch_size = self.val_batch_size // dist.get_world_size()
         val_dataloader = self.val_data.initialize_object(
-            val_device_batch_size, self.dataloader
+            val_device_batch_size, dataloader
         )
 
         # model

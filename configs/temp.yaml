@@ -34,8 +34,3 @@ algorithms:
   - channels_last: {}
 callbacks:
   - lr_monitor: {}
-dataloader:
-  num_workers: 8
-  prefetch_factor: 2
-  persistent_workers: false
-  pin_memory: true
