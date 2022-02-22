@@ -2,7 +2,7 @@ import abc
 from dataclasses import dataclass
 
 import yahp as hp
-from composer.models.base import ComposerClassifier
+from composer.models import ComposerClassifier
 
 
 @dataclass
