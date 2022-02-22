@@ -78,11 +78,12 @@ class TrainExperiment(hp.Hparams):
     device: DeviceHparams = hp.optional("Default: gpu", default=GPUDeviceHparams())
     precision: Precision = hp.optional("Default: amp", default=Precision.AMP)
     save_interval: Optional[str] = hp.optional("Default (None): Nba=1ep", default=None)
+    get_name: bool = hp.optional("Get exp and hash name. Default: False", default=False)
 
     @property
     def name(self) -> str:
         ignore = ["val_batch_size", "dataloader", "replicate", "callbacks", "loggers"]
-        ignore += ["device", "precision", "save_interval"]
+        ignore += ["device", "precision", "save_interval", "get_name"]
         name = utils.get_hparams_name(self, "Train", ignore)
         return name
 

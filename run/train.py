@@ -1,5 +1,6 @@
 import dotenv
 import sys
+
 from lth_diet.exps import TrainExperiment as Experiment
 from lth_diet.utils import utils
 
@@ -12,8 +13,8 @@ def main() -> None:
 
     exp = Experiment.create(cli_args=True)
 
-    if "--name" in sys.argv:
-        print("Name:", exp.name, "Hash:", utils.get_hash(exp.name), sep="\n")
+    print("Name:", exp.name, "Hash:", utils.get_hash(exp.name), sep="\n")
+    if exp.get_name:
         sys.exit(0)
 
     exp.validate()
