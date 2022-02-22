@@ -129,18 +129,20 @@ class TrainExperiment(hp.Hparams):
         optimizer = self.optimizer.initialize_object(model.parameters())
         schedulers = [x.initialize_object() for x in self.schedulers]
 
-        # algorithms, callbacks, and loggers
+        # algorithms, callbacks
         algorithms = [] if self.algorithms is None else self.algorithms
         algorithms = [x.initialize_object() for x in algorithms]
         callbacks = [] if self.callbacks is None else self.callbacks
         callbacks = [x.initialize_object() for x in callbacks]
-        loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
 
         # checkpointing
         save_folder = f"{exp_id}/replicate_{self.replicate}/main"
         save_interval = self.save_interval
         if save_interval is None:
             save_interval = f"{len(train_dataloader)}ba"
+
+        # loggers
+        loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
 
         # trainer
         trainer = Trainer(
@@ -156,7 +158,7 @@ class TrainExperiment(hp.Hparams):
             seed=seed,
             loggers=loggers,
             callbacks=callbacks,
-            load_path=f"{run_directory.get_run_directory()}/{save_folder}/it1560.pt",
+            # load_path=f"{run_directory.get_run_directory()}/{save_folder}/it1560.pt",
             save_folder=save_folder,
             save_interval=save_interval,
         )
