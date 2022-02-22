@@ -10,7 +10,7 @@ from lth_diet.utils import utils
 
 
 @dataclass
-class ResNetCIFAR(ClassifierHparams):
+class ResNetCIFARClassifierHparams(ClassifierHparams):
     num_layers: int = hp.required("Number of layers: 20 | 56")
     initializers: List[Initializer] = hp.optional(
         "Default: kaiming_normal, bn_uniform",
