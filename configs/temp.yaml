@@ -30,7 +30,3 @@ schedulers:
         - 31200ba
         - 46800ba
       gamma: 0.1
-algorithms:
-  - channels_last: {}
-callbacks:
-  - lr_monitor: {}
