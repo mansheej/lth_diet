@@ -61,11 +61,11 @@ class TrainExperiment(hp.Hparams):
     model: ClassifierHparams = hp.required("Classifier hparams")
     train_data: DataHparams = hp.required("Training data hparams")
     val_data: DataHparams = hp.required("Validation data hparams")
-    max_duration: str = hp.required("Max training time string, ep=epoch, ba=batch")
     train_batch_size: int = hp.required("Total across devices and grad accumulations")
     val_batch_size: int = hp.required("Total across devices and grad accumulations")
     optimizer: OptimizerHparams = hp.required("Optimizer hparams")
     schedulers: List[SchedulerHparams] = hp.required("Scheduler sequence")
+    max_duration: str = hp.required("Max training time string, ep=epoch, ba=batch")
     # optional parameters
     replicate: int = hp.optional("Replicate number. Default: 0", default=0)
     seed: int = hp.optional("seed = seed * (replicate + 1). Default: 1", default=1)
@@ -79,14 +79,14 @@ class TrainExperiment(hp.Hparams):
     dataloader: Optional[DataloaderHparams] = hp.optional(
         "Common dataloader hparams. Default (None): Pytorch defaults", default=None
     )
-    save_interval: Optional[str] = hp.optional("Default (None): Nba=1ep", default=None)
-    get_name: bool = hp.optional("Get exp and hash name. Default: False", default=False)
+    save_interval: Optional[str] = hp.optional("Default (None): 1ep", default=None)
+    get_name: bool = hp.optional("Print name and exit. Default: False", default=False)
 
     @property
     def name(self) -> str:
-        ignore = ["val_batch_size", "dataloader", "replicate", "callbacks", "loggers"]
-        ignore += ["device", "precision", "save_interval", "get_name"]
-        name = utils.get_hparams_name(self, "Train", ignore)
+        ignore = ["val_batch_size", "replicate", "callbacks", "loggers", "device"]
+        ignore += ["precision", "dataloader", "save_interval", "get_name"]
+        name = utils.get_hparams_name(self, "TrainExperiment", ignore)
         return name
 
     def validate(self) -> None:
@@ -107,17 +107,21 @@ class TrainExperiment(hp.Hparams):
 
         # train data
         reproducibility.seed_all(42)  # prevent unwanted randomness in data generation
-        dataloader = self.dataloader
-        if dataloader is None:
-            dataloader = DataloaderHparams(persistent_workers=False)
+        if self.dataloader is None:
+            self.dataloader = DataloaderHparams(
+                num_workers=8,
+                prefetch_factor=2,
+                persistent_workers=False,
+                pin_memory=True,
+            )
         train_device_batch_size = self.train_batch_size // dist.get_world_size()
         train_dataloader = self.train_data.initialize_object(
-            train_device_batch_size, dataloader
+            train_device_batch_size, self.dataloader
         )
         # validation data
         val_device_batch_size = self.val_batch_size // dist.get_world_size()
         val_dataloader = self.val_data.initialize_object(
-            val_device_batch_size, dataloader
+            val_device_batch_size, self.dataloader
         )
 
         # model
@@ -130,16 +134,15 @@ class TrainExperiment(hp.Hparams):
         schedulers = [x.initialize_object() for x in self.schedulers]
 
         # algorithms, callbacks
-        algorithms = [] if self.algorithms is None else self.algorithms
-        algorithms = [x.initialize_object() for x in algorithms]
-        callbacks = [] if self.callbacks is None else self.callbacks
-        callbacks = [x.initialize_object() for x in callbacks]
+        if self.algorithms is None:
+            self.algorithms = []
+        algorithms = [x.initialize_object() for x in self.algorithms]
+        callbacks = [x.initialize_object() for x in self.callbacks]
 
         # checkpointing
         save_folder = f"{exp_id}/replicate_{self.replicate}/main"
-        save_interval = self.save_interval
-        if save_interval is None:
-            save_interval = f"{len(train_dataloader)}ba"
+        if self.save_interval is None:
+            self.save_interval = f"{len(train_dataloader)}ba"
 
         # loggers
         loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
@@ -158,9 +161,8 @@ class TrainExperiment(hp.Hparams):
             seed=seed,
             loggers=loggers,
             callbacks=callbacks,
-            # load_path=f"{run_directory.get_run_directory()}/{save_folder}/it1560.pt",
             save_folder=save_folder,
-            save_interval=save_interval,
+            save_interval=self.save_interval,
         )
         return trainer
 
