@@ -76,8 +76,8 @@ class TrainExperiment(hp.Hparams):
     )
     device: DeviceHparams = hp.optional("Default: gpu", default=GPUDeviceHparams())
     precision: Precision = hp.optional("Default: amp", default=Precision.AMP)
-    dataloader: Optional[DataloaderHparams] = hp.optional(
-        "Common dataloader hparams. Default (None): Pytorch defaults", default=None
+    dataloader: DataloaderHparams = hp.optional(
+        "Default: Mosaic defaults", default=DataloaderHparams()
     )
     save_interval: Optional[str] = hp.optional("Default (None): 1ep", default=None)
     get_name: bool = hp.optional("Print name and exit. Default: False", default=False)
@@ -107,13 +107,6 @@ class TrainExperiment(hp.Hparams):
 
         # train data
         reproducibility.seed_all(42)  # prevent unwanted randomness in data generation
-        if self.dataloader is None:
-            self.dataloader = DataloaderHparams(
-                num_workers=8,
-                prefetch_factor=2,
-                persistent_workers=False,
-                pin_memory=True,
-            )
         train_device_batch_size = self.train_batch_size // dist.get_world_size()
         train_dataloader = self.train_data.initialize_object(
             train_device_batch_size, self.dataloader
