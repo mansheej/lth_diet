@@ -138,6 +138,9 @@ class TrainExperiment(hp.Hparams):
             self.save_interval = f"{len(train_dataloader)}ba"
 
         # loggers
+        for logger in self.loggers:
+            if isinstance(logger, WandBLoggerHparams):
+                logger.name = exp_id
         loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
 
         # trainer

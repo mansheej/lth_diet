@@ -2,6 +2,7 @@ data
 !lth_diet/data
 exps
 !lth_diet/exps
+wandb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
