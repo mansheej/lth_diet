@@ -6,7 +6,7 @@ from composer.models import ComposerClassifier
 
 
 @dataclass
-class ClassifierHparams(hp.Hparams, abc.ABC):
+class ComposerClassifierHparams(hp.Hparams, abc.ABC):
     num_classes: int = hp.required("Number of classes")
 
     @abc.abstractmethod

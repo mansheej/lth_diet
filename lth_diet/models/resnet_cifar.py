@@ -5,12 +5,12 @@ import yahp as hp
 from composer.models import ComposerClassifier, Initializer
 from composer.models.resnets import CIFAR_ResNet
 
-from lth_diet.models.classifier import ClassifierHparams
+from lth_diet.models.classifier import ComposerClassifierHparams
 from lth_diet.utils import utils
 
 
 @dataclass
-class ResNetCIFARClassifierHparams(ClassifierHparams):
+class ResNetCIFARClassifierHparams(ComposerClassifierHparams):
     num_layers: int = hp.required("Number of layers: 20 | 56")
     initializers: List[Initializer] = hp.optional(
         "Default: kaiming_normal, bn_uniform",
@@ -19,7 +19,7 @@ class ResNetCIFARClassifierHparams(ClassifierHparams):
 
     @property
     def name(self) -> str:
-        return utils.get_hparams_name(self, "ResNetCIFAR", [])
+        return utils.get_hparams_name(self, prefix="ResNetCIFAR")
 
     def validate(self):
         super().validate()
