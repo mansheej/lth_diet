@@ -13,20 +13,20 @@ def main() -> None:
 
     exp = Experiment.create(cli_args=True)
 
-    print("\n" + ("=" * 88))
+    print("\n" + ("=" * 100))
     print("\nEXPERIMENT NAME:\n" + exp.name)
     print("\nREPLICATE: " + str(exp.replicate))
     print("\nEXPERIMENT HASH:\n" + utils.get_hash(exp.name))
 
     if exp.get_name:
-        print("\n" + ("=" * 88) + "\n")
+        print("\n" + ("=" * 100) + "\n")
         sys.exit(0)
-    print("\n" + ("-" * 88) + "\n")
+    print("\n" + ("-" * 100) + "\n")
 
     exp.validate()
     exp.run()
 
-    print("\n" + ("=" * 88) + "\n")
+    print("\n" + ("=" * 100) + "\n")
 
 
 if __name__ == "__main__":
