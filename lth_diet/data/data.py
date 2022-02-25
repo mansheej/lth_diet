@@ -14,10 +14,7 @@ from torch.utils.data import Sampler
 class DataHparams(hp.Hparams, abc.ABC):
     train: bool = hp.required("True: load training set, False: load test set")
     shuffle: bool = hp.required("True: reshuffle dataset every epoch")
-    drop_last: bool = hp.optional(
-        "Last incomplete batch: True: drop, False: pad with zeros, Default: True",
-        default=True,
-    )
+    drop_last: bool = hp.required("Last incomplete batch: True: drop, False: pad with zeros, Default: True")
     datadir: Optional[str] = hp.optional("Path to data directory", default=None)
 
     @abc.abstractmethod
@@ -26,27 +23,12 @@ class DataHparams(hp.Hparams, abc.ABC):
 
     @abc.abstractmethod
     def get_data(
-        self,
-        dataset: Dataset,
-        sampler: Sampler,
-        batch_size: int,
-        dataloader_hparams: DataloaderHparams,
+        self, dataset: Dataset, sampler: Sampler, batch_size: int, dataloader_hparams: DataloaderHparams
     ) -> DataLoader | DataSpec:
         pass
 
-    def initialize_object(
-        self,
-        batch_size: int,
-        dataloader_hparams: DataloaderHparams,
-    ) -> DataLoader | DataSpec:
+    def initialize_object(self, batch_size: int, dataloader_hparams: DataloaderHparams) -> DataLoader | DataSpec:
         dataset = self.get_dataset()
-        sampler = dist.get_sampler(
-            dataset, drop_last=self.drop_last, shuffle=self.shuffle
-        )
-        data = self.get_data(
-            dataset,
-            sampler=sampler,
-            batch_size=batch_size,
-            dataloader_hparams=dataloader_hparams,
-        )
+        sampler = dist.get_sampler(dataset, drop_last=self.drop_last, shuffle=self.shuffle)
+        data = self.get_data(dataset, sampler=sampler, batch_size=batch_size, dataloader_hparams=dataloader_hparams)
         return data

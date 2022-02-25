@@ -17,8 +17,8 @@ from lth_diet.utils import utils
 class CIFAR10DataHparams(DataHparams):
     @property
     def name(self) -> str:
-        ignore = ["datadir"]
-        return utils.get_hparams_name(self, "CIFAR10", ignore)
+        ignore_fields = ["datadir"]
+        return utils.get_hparams_name(self, prefix="CIFAR10", ignore_fields=ignore_fields)
 
     def get_dataset(self) -> Dataset:
         cifar10_mean, cifar10_std = [0.4914, 0.4822, 0.4465], [0.247, 0.243, 0.261]
@@ -44,12 +44,8 @@ class CIFAR10DataHparams(DataHparams):
         return dataset
 
     def get_data(
-        self,
-        dataset: Dataset,
-        sampler: Sampler,
-        batch_size: int,
-        dataloader_hparams: DataloaderHparams,
-    ) -> DataLoader | DataSpec:
+        self, dataset: Dataset, sampler: Sampler, batch_size: int, dataloader_hparams: DataloaderHparams
+    ) -> DataLoader:
         data = dataloader_hparams.initialize_object(
             dataset, batch_size=batch_size, sampler=sampler, drop_last=self.drop_last
         )
