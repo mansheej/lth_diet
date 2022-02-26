@@ -13,6 +13,8 @@ def resolve_field_name(field: HparamField) -> str:
         name = field.name if hasattr(field, "name") else get_hparams_name(field)
     elif isinstance(field, List):
         name = f"[{','.join([resolve_field_name(x) for x in field])}]"
+    elif isinstance(field, Enum):
+        name = resolve_field_name(field.value)
     else:
         name = str(field)
     return name
