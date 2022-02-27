@@ -3,7 +3,7 @@ from dataclasses import dataclass
 import os
 from pathlib import Path
 
-from composer.core.types import DataLoader, DataSpec, Dataset
+from composer.core.types import DataLoader, Dataset
 from composer.datasets.dataloader import DataloaderHparams
 from torch.utils.data import Sampler
 from torchvision import transforms
