@@ -88,9 +88,9 @@ class TrainExperiment(hp.Hparams):
     def validate(self) -> None:
         super().validate()
         if self.replicate < 0:
-            raise ValueError(f"Replicate must be positive")
+            raise ValueError(f"Replicate must be non-negative")
         if self.seed <= 0:
-            raise ValueError(f"Seed must be non-negative")
+            raise ValueError(f"Seed must be positive")
         world_size = dist.get_world_size()
         if self.train_batch_size % world_size != 0:
             raise ValueError(f"Train batch size not divisible by number of processes")
