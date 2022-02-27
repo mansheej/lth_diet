@@ -21,10 +21,10 @@ from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
 from composer.optim.scheduler import MultiStepLRHparams
 from composer.trainer import Trainer
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
-from composer.utils import dist, reproducibility, run_directory
+from composer.utils import dist, reproducibility
 
 from lth_diet.data import DataHparams, data_registry
-from lth_diet.models import ClassifierHparams, model_registry
+from lth_diet.models import ComposerClassifierHparams, model_registry
 from lth_diet.utils import utils
 
 
@@ -58,7 +58,7 @@ hparams_registry = {
 class TrainExperiment(hp.Hparams):
     hparams_registry = hparams_registry
     # required parameters
-    model: ClassifierHparams = hp.required("Classifier hparams")
+    model: ComposerClassifierHparams = hp.required("Classifier hparams")
     train_data: DataHparams = hp.required("Training data hparams")
     val_data: DataHparams = hp.required("Validation data hparams")
     train_batch_size: int = hp.required("Total across devices and grad accumulations")
@@ -71,22 +71,18 @@ class TrainExperiment(hp.Hparams):
     seed: int = hp.optional("seed = seed * (replicate + 1). Default: 1", default=1)
     algorithms: Optional[List[AlgorithmHparams]] = hp.optional("None: []", default=None)
     callbacks: List[CallbackHparams] = hp.optional("Default: []", default_factory=list)
-    loggers: List[LoggerCallbackHparams] = hp.optional(
-        "Default: [file]", default_factory=lambda: [FileLoggerHparams()]
-    )
+    loggers: List[LoggerCallbackHparams] = hp.optional("Default:[tqdm]", default_factory=lambda: [TQDMLoggerHparams()])
     device: DeviceHparams = hp.optional("Default: gpu", default=GPUDeviceHparams())
     precision: Precision = hp.optional("Default: amp", default=Precision.AMP)
-    dataloader: DataloaderHparams = hp.optional(
-        "Default: Mosaic defaults", default=DataloaderHparams()
-    )
-    save_interval: Optional[str] = hp.optional("Default (None): 1ep", default=None)
+    dataloader: DataloaderHparams = hp.optional("Default: Mosaic defaults", default=DataloaderHparams())
+    save_interval: Optional[str] = hp.optional("Default: 1ep, None: no saving", default="1ep")
     get_name: bool = hp.optional("Print name and exit. Default: False", default=False)
 
     @property
     def name(self) -> str:
-        ignore = ["val_batch_size", "replicate", "callbacks", "loggers", "device"]
-        ignore += ["precision", "dataloader", "save_interval", "get_name"]
-        name = utils.get_hparams_name(self, "TrainExperiment", ignore)
+        ignore_fields = ["val_batch_size", "replicate", "callbacks", "loggers", "device", "precision", "dataloader"]
+        ignore_fields += ["save_interval", "get_name"]
+        name = utils.get_hparams_name(self, prefix="TrainExperiment", ignore_fields=ignore_fields)
         return name
 
     def validate(self) -> None:
@@ -108,14 +104,10 @@ class TrainExperiment(hp.Hparams):
         # train data
         reproducibility.seed_all(42)  # prevent unwanted randomness in data generation
         train_device_batch_size = self.train_batch_size // dist.get_world_size()
-        train_dataloader = self.train_data.initialize_object(
-            train_device_batch_size, self.dataloader
-        )
+        train_dataloader = self.train_data.initialize_object(train_device_batch_size, self.dataloader)
         # validation data
         val_device_batch_size = self.val_batch_size // dist.get_world_size()
-        val_dataloader = self.val_data.initialize_object(
-            val_device_batch_size, self.dataloader
-        )
+        val_dataloader = self.val_data.initialize_object(val_device_batch_size, self.dataloader)
 
         # model
         seed = self.seed * (self.replicate + 1)
