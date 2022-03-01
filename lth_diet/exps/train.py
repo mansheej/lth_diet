@@ -1,5 +1,6 @@
 from __future__ import annotations
 from dataclasses import dataclass
+from libcloud.storage.types import ObjectDoesNotExistError
 import os
 from pathlib import Path
 import shutil
@@ -103,7 +104,14 @@ class TrainExperiment(hp.Hparams):
             raise ValueError(f"Val batch size not divisible by number of processes")
 
     def _exists_in_bucket(self, object_store: Optional[ObjectStoreProvider]) -> bool:
-        return False
+        if object_store is None:
+            return False
+        object_name = f"exps/{utils.get_hash(self.name)}/replicate_{self.replicate}/main/ckpt_final.pt"
+        try:
+            object_store.get_object_size(object_name)
+        except ObjectDoesNotExistError:
+            return False
+        return True
 
     def run(self) -> None:
         # Abort if a completed exp exists in the bucket, else make local exp dir and save hparams
@@ -169,6 +177,6 @@ class TrainExperiment(hp.Hparams):
         # If object store is provided, upload files to the cloud and clean up local directory
         if object_store is not None:
             for obj in os.listdir(exp_dir):
-                object_store.upload_object(exp_dir / obj, "exps/" + exp_prefix + "/" + obj)
+                object_store.upload_object(exp_dir / obj, f"exps/{exp_prefix}/{obj}")
             # Clean up
             shutil.rmtree(run_dir / utils.get_hash(self.name))
