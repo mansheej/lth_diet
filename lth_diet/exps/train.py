@@ -2,6 +2,7 @@ from __future__ import annotations
 from dataclasses import dataclass
 import os
 from pathlib import Path
+import shutil
 import torch
 from typing import List, Optional
 
@@ -25,7 +26,7 @@ from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
 from composer.optim.scheduler import MultiStepLRHparams
 from composer.trainer import Trainer
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
-from composer.utils import dist, reproducibility
+from composer.utils import dist, ObjectStoreProvider, ObjectStoreProviderHparams, reproducibility
 
 from lth_diet.data import DataHparams, data_registry
 from lth_diet.models import ComposerClassifierHparams, model_registry
@@ -79,13 +80,13 @@ class TrainExperiment(hp.Hparams):
     device: DeviceHparams = hp.optional("Default: gpu", default=GPUDeviceHparams())
     precision: Precision = hp.optional("Default: amp", default=Precision.AMP)
     dataloader: DataloaderHparams = hp.optional("Default: Mosaic defaults", default=DataloaderHparams())
-    # save_interval: Optional[str] = hp.optional("Default: 1ep, None: no saving", default="1ep")
+    object_store: Optional[ObjectStoreProviderHparams] = hp.optional("Default: None", default=None)
     get_name: bool = hp.optional("Print name and exit. Default: False", default=False)
 
     @property
     def name(self) -> str:
         ignore_fields = ["val_batch_size", "replicate", "callbacks", "loggers", "device", "precision", "dataloader"]
-        ignore_fields += ["save_interval", "get_name"]
+        ignore_fields += ["object_store", "get_name"]
         name = utils.get_hparams_name(self, prefix="TrainExperiment", ignore_fields=ignore_fields)
         return name
 
@@ -101,22 +102,20 @@ class TrainExperiment(hp.Hparams):
         if self.val_batch_size % world_size != 0:
             raise ValueError(f"Val batch size not divisible by number of processes")
 
-    def _exists_in_bucket(self) -> bool:
+    def _exists_in_bucket(self, object_store: Optional[ObjectStoreProvider]) -> bool:
         return False
-
-    def _setup_exp(self) -> Path | str:
-        run_dir = Path(os.environ["COMPOSER_RUN_DIRECTORY"])
-        exp_dir = run_dir / f"{utils.get_hash(self.name)}/replicate_{self.replicate}/main"
-        os.makedirs(exp_dir, exist_ok=True)
-        with open(exp_dir / "hparams.yaml", "w") as f:
-            f.write(self.to_yaml())
-        return exp_dir
 
     def run(self) -> None:
         # Abort if a completed exp exists in the bucket, else make local exp dir and save hparams
-        if self._exists_in_bucket():
+        object_store = None if self.object_store is None else self.object_store.initialize_object()
+        if self._exists_in_bucket(object_store):
             return
-        exp_dir = self._setup_exp()
+        run_dir = Path(os.environ["COMPOSER_RUN_DIRECTORY"])
+        exp_prefix = f"{utils.get_hash(self.name)}/replicate_{self.replicate}/main"
+        exp_dir = run_dir / exp_prefix
+        os.makedirs(exp_dir, exist_ok=True)
+        with open(exp_dir / "hparams.yaml", "w") as f:
+            f.write(self.to_yaml())
 
         # Device
         device = self.device.initialize_object()
@@ -166,3 +165,10 @@ class TrainExperiment(hp.Hparams):
 
         # Save final model
         torch.save(model.state_dict(), exp_dir / "ckpt_final.pt")
+
+        # If object store is provided, upload files to the cloud and clean up local directory
+        if object_store is not None:
+            for obj in os.listdir(exp_dir):
+                object_store.upload_object(exp_dir / obj, "exps/" + exp_prefix + "/" + obj)
+            # Clean up
+            shutil.rmtree(run_dir / utils.get_hash(self.name))
