@@ -6,6 +6,7 @@ from pathlib import Path
 import shutil
 import torch
 from typing import List, Optional
+import wandb
 
 import yahp as hp
 from composer.algorithms import AlgorithmHparams, get_algorithm_registry
@@ -118,9 +119,10 @@ class TrainExperiment(hp.Hparams):
         object_store = None if self.object_store is None else self.object_store.initialize_object()
         if self._exists_in_bucket(object_store):
             return
+        exp_name = utils.get_hash(self.name)
+        run_name = f"{exp_name}/replicate_{self.replicate}/main"
         run_dir = Path(os.environ["COMPOSER_RUN_DIRECTORY"])
-        exp_prefix = f"{utils.get_hash(self.name)}/replicate_{self.replicate}/main"
-        exp_dir = run_dir / exp_prefix
+        exp_dir = run_dir / run_name
         os.makedirs(exp_dir, exist_ok=True)
         with open(exp_dir / "hparams.yaml", "w") as f:
             f.write(self.to_yaml())
@@ -150,6 +152,10 @@ class TrainExperiment(hp.Hparams):
         callbacks = [x.initialize_object() for x in self.callbacks]
 
         # Initialize Loggers
+        if self.loggers and isinstance(self.loggers[0], WandBLoggerHparams):  # extra config for WandB
+            self.loggers[0].name = f"{exp_name}_{self.replicate}"
+            self.loggers[0].group = exp_name
+            self.loggers[0].extra_init_params = {"dir": exp_dir}
         loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
 
         # Initialize trainer
@@ -168,6 +174,11 @@ class TrainExperiment(hp.Hparams):
             callbacks=callbacks,
         )
 
+        # Save WandB run id for easy access
+        if self.loggers and isinstance(self.loggers[0], WandBLoggerHparams):
+            with open(exp_dir / "wandb_run_id", "w") as f:
+                f.write(wandb.run.id)
+
         # Train model
         trainer.fit()
 
@@ -177,6 +188,5 @@ class TrainExperiment(hp.Hparams):
         # If object store is provided, upload files to the cloud and clean up local directory
         if object_store is not None:
             for obj in os.listdir(exp_dir):
-                object_store.upload_object(exp_dir / obj, f"exps/{exp_prefix}/{obj}")
-            # Clean up
-            shutil.rmtree(run_dir / utils.get_hash(self.name))
+                object_store.upload_object(exp_dir / obj, f"exps/{run_name}/{obj}")
+            shutil.rmtree(run_dir / exp_name)
