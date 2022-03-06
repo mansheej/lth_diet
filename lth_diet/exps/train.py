@@ -153,9 +153,10 @@ class TrainExperiment(hp.Hparams):
 
         # Initialize Loggers
         if self.loggers and isinstance(self.loggers[0], WandBLoggerHparams):  # extra config for WandB
-            self.loggers[0].name = f"{exp_name}_{self.replicate}"
-            self.loggers[0].group = exp_name
-            self.loggers[0].extra_init_params = {"dir": exp_dir}
+            if self.loggers[0].name is None:
+                self.loggers[0].name = exp_name
+            if self.loggers[0].group is None:
+                self.loggers[0].group = exp_name
         loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
 
         # Initialize trainer
