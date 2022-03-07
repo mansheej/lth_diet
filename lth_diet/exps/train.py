@@ -74,16 +74,18 @@ class TrainExperiment(hp.Hparams):
     schedulers: List[SchedulerHparams] = hp.required("Scheduler sequence")
     max_duration: str = hp.required("Max training time string, ep=epoch, ba=batch")
     # optional parameters
-    replicate: int = hp.optional("Replicate number. Default: 0", default=0)
-    seed: int = hp.optional("seed = seed * (replicate + 1). Default: 1", default=1)
-    algorithms: Optional[List[AlgorithmHparams]] = hp.optional("None: []", default=None)
-    callbacks: List[CallbackHparams] = hp.optional("Default: []", default_factory=list)
-    loggers: List[LoggerCallbackHparams] = hp.optional("Default:[tqdm]", default_factory=lambda: [TQDMLoggerHparams()])
-    device: DeviceHparams = hp.optional("Default: gpu", default=GPUDeviceHparams())
-    precision: Precision = hp.optional("Default: amp", default=Precision.AMP)
+    replicate: int = hp.optional("Replicate number", default=0)
+    seed: int = hp.optional("seed = seed * (replicate + 1)", default=1)
+    algorithms: Optional[List[AlgorithmHparams]] = hp.optional("None => []", default=None)
+    callbacks: List[CallbackHparams] = hp.optional("(Default: []).", default_factory=list)
+    loggers: List[LoggerCallbackHparams] = hp.optional(
+        "(Default: [tqdm]).", default_factory=lambda: [TQDMLoggerHparams()]
+    )
+    device: DeviceHparams = hp.optional("Device", default=GPUDeviceHparams())
+    precision: Precision = hp.optional("Precision", default=Precision.AMP)
     dataloader: DataloaderHparams = hp.optional("Default: Mosaic defaults", default=DataloaderHparams())
-    object_store: Optional[ObjectStoreProviderHparams] = hp.optional("Default: None", default=None)
-    get_name: bool = hp.optional("Print name and exit. Default: False", default=False)
+    object_store: Optional[ObjectStoreProviderHparams] = hp.optional("Bucket", default=None)
+    get_name: bool = hp.optional("Print name and exit", default=False)
 
     @property
     def name(self) -> str:
