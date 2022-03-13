@@ -24,18 +24,18 @@ optimizer:
     momentum: 0.9
     weight_decay: 0.0001
 schedulers:
-- multistep:
+  multistep:
     milestones:
     - 31200ba
     - 46800ba
     gamma: 0.1
 max_duration: 62400ba
 algorithms:
-- channels_last: {}
+  channels_last: {}
 callbacks:
-- lr_monitor: {}
+  lr_monitor: {}
 loggers:
-- wandb:
+  wandb:
     project: lth_diet
     entity: prunes
     flatten_hparams: true

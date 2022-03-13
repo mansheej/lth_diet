@@ -17,7 +17,7 @@ from composer.callbacks import (
     RunDirectoryUploaderHparams,
 )
 from composer.core.types import Precision
-from composer.datasets import DataloaderHparams
+from composer.datasets import DataLoaderHparams
 from composer.loggers import (
     FileLoggerHparams,
     LoggerCallbackHparams,
@@ -25,7 +25,7 @@ from composer.loggers import (
     WandBLoggerHparams,
 )
 from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
-from composer.optim.scheduler import MultiStepLRHparams
+from composer.optim.scheduler_hparams import MultiStepSchedulerHparams
 from composer.trainer import Trainer
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
 from composer.utils import dist, ObjectStoreProvider, ObjectStoreProviderHparams, reproducibility
@@ -36,7 +36,7 @@ from lth_diet.utils import utils
 
 
 optimizer_registry = {"sgd": SGDHparams}
-scheduler_registry = {"multistep": MultiStepLRHparams}
+scheduler_registry = {"multistep": MultiStepSchedulerHparams}
 logger_registry = {
     "file": FileLoggerHparams,
     "wandb": WandBLoggerHparams,
@@ -83,7 +83,7 @@ class TrainExperiment(hp.Hparams):
     )
     device: DeviceHparams = hp.optional("Device", default=GPUDeviceHparams())
     precision: Precision = hp.optional("Precision", default=Precision.AMP)
-    dataloader: DataloaderHparams = hp.optional("Default: Mosaic defaults", default=DataloaderHparams())
+    dataloader: DataLoaderHparams = hp.optional("Default: Mosaic defaults", default=DataLoaderHparams())
     object_store: Optional[ObjectStoreProviderHparams] = hp.optional("Bucket", default=None)
     get_name: bool = hp.optional("Print name and exit", default=False)
 

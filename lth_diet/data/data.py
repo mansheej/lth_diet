@@ -5,7 +5,7 @@ from typing import Optional
 
 import yahp as hp
 from composer.core.types import DataLoader, DataSpec, Dataset
-from composer.datasets.dataloader import DataloaderHparams
+from composer.datasets.dataloader import DataLoaderHparams
 from composer.utils import dist
 from torch.utils.data import Sampler
 
@@ -23,11 +23,11 @@ class DataHparams(hp.Hparams, abc.ABC):
 
     @abc.abstractmethod
     def get_data(
-        self, dataset: Dataset, sampler: Sampler, batch_size: int, dataloader_hparams: DataloaderHparams
+        self, dataset: Dataset, sampler: Sampler, batch_size: int, dataloader_hparams: DataLoaderHparams
     ) -> DataLoader | DataSpec:
         pass
 
-    def initialize_object(self, batch_size: int, dataloader_hparams: DataloaderHparams) -> DataLoader | DataSpec:
+    def initialize_object(self, batch_size: int, dataloader_hparams: DataLoaderHparams) -> DataLoader | DataSpec:
         dataset = self.get_dataset()
         sampler = dist.get_sampler(dataset, drop_last=self.drop_last, shuffle=self.shuffle)
         data = self.get_data(dataset, sampler=sampler, batch_size=batch_size, dataloader_hparams=dataloader_hparams)

@@ -1,10 +1,9 @@
-from __future__ import annotations
 from dataclasses import dataclass
 import os
 from pathlib import Path
 
 from composer.core.types import DataLoader, Dataset
-from composer.datasets.dataloader import DataloaderHparams
+from composer.datasets.dataloader import DataLoaderHparams
 from torch.utils.data import Sampler
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
@@ -44,7 +43,7 @@ class CIFAR10DataHparams(DataHparams):
         return dataset
 
     def get_data(
-        self, dataset: Dataset, sampler: Sampler, batch_size: int, dataloader_hparams: DataloaderHparams
+        self, dataset: Dataset, sampler: Sampler, batch_size: int, dataloader_hparams: DataLoaderHparams
     ) -> DataLoader:
         data = dataloader_hparams.initialize_object(
             dataset, batch_size=batch_size, sampler=sampler, drop_last=self.drop_last
