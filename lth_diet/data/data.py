@@ -14,7 +14,7 @@ from torch.utils.data import Sampler
 class DataHparams(hp.Hparams, abc.ABC):
     train: bool = hp.required("True: load training set, False: load test set")
     shuffle: bool = hp.required("True: reshuffle dataset every epoch")
-    drop_last: bool = hp.required("Last incomplete batch: True: drop, False: pad with zeros, Default: True")
+    drop_last: bool = hp.required("Last incomplete batch: True: drop, False: pad with zeros")
     datadir: Optional[str] = hp.optional("Path to data directory", default=None)
 
     @abc.abstractmethod
