@@ -1,14 +1,12 @@
+from __future__ import annotations
 from dataclasses import fields
 from enum import Enum
 import hashlib
-from typing import List, Optional, Union
+from typing import List, Optional
 import yahp as hp
 
 
-HparamField = Union[int, float, bool, str, Enum, List, hp.Hparams]
-
-
-def resolve_field_name(field: HparamField) -> str:
+def resolve_field_name(field: int | float | bool | str | Enum | List | hp.Hparams) -> str:
     if isinstance(field, hp.Hparams):
         name = field.name if hasattr(field, "name") else get_hparams_name(field)
     elif isinstance(field, List):
