@@ -28,7 +28,7 @@ from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
 from composer.optim.scheduler_hparams import MultiStepSchedulerHparams
 from composer.trainer import Trainer
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
-from composer.utils import dist, ObjectStoreProvider, ObjectStoreProviderHparams, reproducibility
+from composer.utils import dist, ObjectStoreProvider, ObjectStoreProviderHparams, reproducibility, run_directory
 
 from lth_diet.data import DataHparams, data_registry
 from lth_diet.models import ComposerClassifierHparams, model_registry
@@ -123,7 +123,7 @@ class TrainExperiment(hp.Hparams):
             return
         exp_name = utils.get_hash(self.name)
         run_name = f"{exp_name}/replicate_{self.replicate}/main"
-        run_dir = Path(os.environ["COMPOSER_RUN_DIRECTORY"])
+        run_dir = Path(run_directory.get_run_directory())
         exp_dir = run_dir / run_name
         os.makedirs(exp_dir, exist_ok=True)
         with open(exp_dir / "hparams.yaml", "w") as f:
