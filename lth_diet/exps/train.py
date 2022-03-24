@@ -14,7 +14,6 @@ from composer.callbacks import (
     CallbackHparams,
     GradMonitorHparams,
     LRMonitorHparams,
-    RunDirectoryUploaderHparams,
 )
 from composer.core.types import Precision
 from composer.datasets import DataLoaderHparams
@@ -45,7 +44,6 @@ logger_registry = {
 callback_registry = {
     "lr_monitor": LRMonitorHparams,
     "grad_monitor": GradMonitorHparams,
-    "run_directory_uploader": RunDirectoryUploaderHparams,
 }
 device_registry = {"gpu": GPUDeviceHparams, "cpu": CPUDeviceHparams}
 hparams_registry = {
@@ -78,9 +76,7 @@ class TrainExperiment(hp.Hparams):
     seed: int = hp.optional("seed = seed * (replicate + 1)", default=1)
     algorithms: Optional[List[AlgorithmHparams]] = hp.optional("None => []", default=None)
     callbacks: List[CallbackHparams] = hp.optional("(Default: []).", default_factory=list)
-    loggers: List[LoggerCallbackHparams] = hp.optional(
-        "(Default: [tqdm]).", default_factory=lambda: [TQDMLoggerHparams()]
-    )
+    loggers: List[LoggerCallbackHparams] = hp.optional("(Default: []).", default_factory=list)
     device: DeviceHparams = hp.optional("Device", default=GPUDeviceHparams())
     precision: Precision = hp.optional("Precision", default=Precision.AMP)
     dataloader: DataLoaderHparams = hp.optional("Default: Mosaic defaults", default=DataLoaderHparams())
@@ -123,9 +119,10 @@ class TrainExperiment(hp.Hparams):
             return
         exp_name = utils.get_hash(self.name)
         run_name = f"{exp_name}/replicate_{self.replicate}/main"
-        run_dir = Path(run_directory.get_run_directory())
-        exp_dir = run_dir / run_name
-        os.makedirs(exp_dir, exist_ok=True)
+        exp_dir = Path(run_directory.get_run_directory()) / run_name
+        if exp_dir.exists():
+            shutil.rmtree(exp_dir)
+        os.makedirs(exp_dir)
         with open(exp_dir / "hparams.yaml", "w") as f:
             f.write(self.to_yaml())
 
@@ -136,7 +133,7 @@ class TrainExperiment(hp.Hparams):
         seed = self.seed * (self.replicate + 1)
         reproducibility.seed_all(seed)
         model = self.model.initialize_object()
-        torch.save(model.state_dict(), exp_dir / "ckpt_init.pt")
+        torch.save(model.state_dict(), exp_dir / "model_init.pt")
 
         # Load training and validation data
         reproducibility.seed_all(42)  # prevent unwanted randomness in data generation
@@ -153,13 +150,18 @@ class TrainExperiment(hp.Hparams):
         algorithms = [] if self.algorithms is None else [x.initialize_object() for x in self.algorithms]
         callbacks = [x.initialize_object() for x in self.callbacks]
 
-        # Initialize Loggers
-        if self.loggers and isinstance(self.loggers[0], WandBLoggerHparams):  # extra config for WandB
-            if self.loggers[0].name is None:
-                self.loggers[0].name = exp_name
-            if self.loggers[0].group is None:
-                self.loggers[0].group = exp_name
-        loggers = [x.initialize_object(config=self.to_dict()) for x in self.loggers]
+        # Configure and initialize loggers
+        save_wandb_run_id = False
+        for logger in self.loggers:
+            if isinstance(logger, FileLoggerHparams):
+                logger.filename = str(exp_dir / logger.filename)
+                logger.flush_interval = len(train_dataloader)
+            if isinstance(logger, WandBLoggerHparams):
+                logger.name = f"{exp_name}_{self.replicate}"
+                logger.group = exp_name
+                save_wandb_run_id = True
+        config_dict = self.to_dict()
+        loggers = [x.initialize_object(config=config_dict) for x in self.loggers]
 
         # Initialize trainer
         trainer = Trainer(
@@ -178,18 +180,18 @@ class TrainExperiment(hp.Hparams):
         )
 
         # Save WandB run id for easy access
-        if self.loggers and isinstance(self.loggers[0], WandBLoggerHparams):
-            with open(exp_dir / "wandb_run_id", "w") as f:
+        if save_wandb_run_id:
+            with open(exp_dir / "wandb_run_id.txt", "w") as f:
                 f.write(wandb.run.id)
 
         # Train model
         trainer.fit()
 
         # Save final model
-        torch.save(model.state_dict(), exp_dir / "ckpt_final.pt")
+        torch.save(model.state_dict(), exp_dir / "model_final.pt")
 
         # If object store is provided, upload files to the cloud and clean up local directory
         if object_store is not None:
             for obj in os.listdir(exp_dir):
                 object_store.upload_object(exp_dir / obj, f"exps/{run_name}/{obj}")
-            shutil.rmtree(run_dir / exp_name)
+            shutil.rmtree(exp_dir)
