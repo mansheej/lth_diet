@@ -35,10 +35,12 @@ algorithms:
 callbacks:
   lr_monitor: {}
 loggers:
+  file:
+    filename: log.txt
+    log_level: 3
   wandb:
     project: lth_diet
     entity: prunes
-    flatten_hparams: true
 object_store:
   provider: google_storage
   container: prunes
