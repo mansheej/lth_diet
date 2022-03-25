@@ -105,7 +105,7 @@ class TrainExperiment(hp.Hparams):
     def _exists_in_bucket(self, object_store: Optional[ObjectStoreProvider]) -> bool:
         if object_store is None:
             return False
-        object_name = f"exps/{utils.get_hash(self.name)}/replicate_{self.replicate}/main/ckpt_final.pt"
+        object_name = f"exps/{utils.get_hash(self.name)}/replicate_{self.replicate}/main/model_final.pt"
         try:
             object_store.get_object_size(object_name)
         except ObjectDoesNotExistError:
@@ -156,7 +156,7 @@ class TrainExperiment(hp.Hparams):
             if isinstance(logger, FileLoggerHparams):
                 logger.filename = str(exp_dir / logger.filename)
                 logger.flush_interval = len(train_dataloader)
-            if isinstance(logger, WandBLoggerHparams):
+            elif isinstance(logger, WandBLoggerHparams):
                 logger.name = f"{exp_name}_{self.replicate}"
                 logger.group = exp_name
                 save_wandb_run_id = True
