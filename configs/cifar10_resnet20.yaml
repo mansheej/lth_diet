@@ -34,6 +34,8 @@ algorithms:
   channels_last: {}
 callbacks:
   lr_monitor: {}
+dataloader:
+  persistent_workers: false
 loggers:
   file:
     filename: log.txt
