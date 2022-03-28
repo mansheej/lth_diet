@@ -2,8 +2,11 @@ from __future__ import annotations
 from dataclasses import fields
 from enum import Enum
 import hashlib
+from libcloud.storage.types import ObjectDoesNotExistError
+from pathlib import Path
 from typing import List, Optional
 import yahp as hp
+from composer.utils import ObjectStoreProvider
 
 
 def resolve_field_name(field: int | float | bool | str | Enum | List | hp.Hparams) -> str:
@@ -34,3 +37,13 @@ def get_hparams_name(
 
 def get_hash(string: str) -> str:
     return hashlib.md5(string.encode("utf-8")).hexdigest()
+
+
+def object_exists_in_bucket(object_name: str, object_store: Optional[ObjectStoreProvider]) -> bool:
+    if object_store is None:
+        return False
+    try:
+        object_store.get_object_size(object_name)
+    except ObjectDoesNotExistError:
+        return False
+    return True

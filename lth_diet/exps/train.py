@@ -1,6 +1,5 @@
 from __future__ import annotations
 from dataclasses import dataclass
-from libcloud.storage.types import ObjectDoesNotExistError
 import os
 from pathlib import Path
 import shutil
@@ -27,7 +26,7 @@ from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
 from composer.optim.scheduler_hparams import MultiStepSchedulerHparams
 from composer.trainer import Trainer
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
-from composer.utils import dist, ObjectStoreProvider, ObjectStoreProviderHparams, reproducibility, run_directory
+from composer.utils import dist, ObjectStoreProviderHparams, reproducibility, run_directory
 
 from lth_diet.data import DataHparams, data_registry
 from lth_diet.models import ComposerClassifierHparams, model_registry
@@ -102,23 +101,14 @@ class TrainExperiment(hp.Hparams):
         if self.val_batch_size % world_size != 0:
             raise ValueError(f"Val batch size not divisible by number of processes")
 
-    def _exists_in_bucket(self, object_store: Optional[ObjectStoreProvider]) -> bool:
-        if object_store is None:
-            return False
-        object_name = f"exps/{utils.get_hash(self.name)}/replicate_{self.replicate}/main/model_final.pt"
-        try:
-            object_store.get_object_size(object_name)
-        except ObjectDoesNotExistError:
-            return False
-        return True
-
     def run(self) -> None:
         # Abort if a completed exp exists in the bucket, else make local exp dir and save hparams
         object_store = None if self.object_store is None else self.object_store.initialize_object()
-        if self._exists_in_bucket(object_store):
-            return
         exp_name = utils.get_hash(self.name)
         run_name = f"{exp_name}/replicate_{self.replicate}/main"
+        if utils.object_exists_in_bucket(f"exps/{run_name}/model_final.pt", object_store):
+            print(f"{run_name}/model_final.pt exists in bucket")
+            return
         exp_dir = Path(run_directory.get_run_directory()) / run_name
         if exp_dir.exists():
             shutil.rmtree(exp_dir)
