@@ -21,9 +21,8 @@ class CIFAR10DataHparams(DataHparams):
 
     def get_dataset(self) -> Dataset:
         cifar10_mean, cifar10_std = [0.4914, 0.4822, 0.4465], [0.247, 0.243, 0.261]
-        datadir = self.datadir if self.datadir else os.environ["DATADIR"]
-        datadir = Path(datadir) / "cifar10"
-        if self.train:
+        datadir = Path(self.datadir if self.datadir else os.environ["DATADIR"]) / "cifar10"
+        if self.train and not self.no_augment:
             transform = transforms.Compose(
                 [
                     transforms.RandomCrop(32, padding=4),
