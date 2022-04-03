@@ -1,49 +1,31 @@
 from __future__ import annotations
+from composer.algorithms import AlgorithmHparams, get_algorithm_registry
+from composer.callbacks import CallbackHparams, GradMonitorHparams, LRMonitorHparams
+from composer.core.types import Precision
+from composer.datasets import DataLoaderHparams
+from composer.loggers import FileLoggerHparams, LoggerCallbackHparams, TQDMLoggerHparams, WandBLoggerHparams
+from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
+from composer.optim.scheduler_hparams import MultiStepSchedulerHparams
+from composer.trainer import Trainer
+from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
+from composer.utils import dist, ObjectStoreProviderHparams, reproducibility, run_directory
 from dataclasses import dataclass
+from lth_diet.data import DataHparams, data_registry
+from lth_diet.models import ComposerClassifierHparams, model_registry
+from lth_diet.utils import utils
 import os
 from pathlib import Path
 import shutil
 import torch
 from typing import List, Optional
 import wandb
-
 import yahp as hp
-from composer.algorithms import AlgorithmHparams, get_algorithm_registry
-from composer.callbacks import (
-    CallbackHparams,
-    GradMonitorHparams,
-    LRMonitorHparams,
-)
-from composer.core.types import Precision
-from composer.datasets import DataLoaderHparams
-from composer.loggers import (
-    FileLoggerHparams,
-    LoggerCallbackHparams,
-    TQDMLoggerHparams,
-    WandBLoggerHparams,
-)
-from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
-from composer.optim.scheduler_hparams import MultiStepSchedulerHparams
-from composer.trainer import Trainer
-from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
-from composer.utils import dist, ObjectStoreProviderHparams, reproducibility, run_directory
-
-from lth_diet.data import DataHparams, data_registry
-from lth_diet.models import ComposerClassifierHparams, model_registry
-from lth_diet.utils import utils
 
 
 optimizer_registry = {"sgd": SGDHparams}
 scheduler_registry = {"multistep": MultiStepSchedulerHparams}
-logger_registry = {
-    "file": FileLoggerHparams,
-    "wandb": WandBLoggerHparams,
-    "tqdm": TQDMLoggerHparams,
-}
-callback_registry = {
-    "lr_monitor": LRMonitorHparams,
-    "grad_monitor": GradMonitorHparams,
-}
+logger_registry = {"file": FileLoggerHparams, "wandb": WandBLoggerHparams, "tqdm": TQDMLoggerHparams}
+callback_registry = {"lr_monitor": LRMonitorHparams, "grad_monitor": GradMonitorHparams}
 device_registry = {"gpu": GPUDeviceHparams, "cpu": CPUDeviceHparams}
 hparams_registry = {
     "model": model_registry,
@@ -128,9 +110,13 @@ class TrainExperiment(hp.Hparams):
         # Load training and validation data
         reproducibility.seed_all(42)  # prevent unwanted randomness in data generation
         train_device_batch_size = self.train_batch_size // dist.get_world_size()
-        train_dataloader = self.train_data.initialize_object(train_device_batch_size, self.dataloader)
+        train_dataloader = self.train_data.initialize_object(
+            train_device_batch_size, self.dataloader, replicate=self.replicate
+        )
         val_device_batch_size = self.val_batch_size // dist.get_world_size()
-        val_dataloader = self.val_data.initialize_object(val_device_batch_size, self.dataloader)
+        val_dataloader = self.val_data.initialize_object(
+            val_device_batch_size, self.dataloader, replicate=self.replicate
+        )
 
         # Initialize optimizer and schedulers
         optimizer = self.optimizer.initialize_object(model.parameters())
