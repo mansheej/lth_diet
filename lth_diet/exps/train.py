@@ -111,11 +111,11 @@ class TrainExperiment(hp.Hparams):
         reproducibility.seed_all(42)  # prevent unwanted randomness in data generation
         train_device_batch_size = self.train_batch_size // dist.get_world_size()
         train_dataloader = self.train_data.initialize_object(
-            train_device_batch_size, self.dataloader, replicate=self.replicate
+            train_device_batch_size, self.dataloader, replicate=self.replicate, object_store=object_store
         )
         val_device_batch_size = self.val_batch_size // dist.get_world_size()
         val_dataloader = self.val_data.initialize_object(
-            val_device_batch_size, self.dataloader, replicate=self.replicate
+            val_device_batch_size, self.dataloader, replicate=self.replicate, object_store=object_store
         )
 
         # Initialize optimizer and schedulers
