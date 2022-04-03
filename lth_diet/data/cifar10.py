@@ -1,15 +1,13 @@
-from dataclasses import dataclass
-import os
-from pathlib import Path
-
 from composer.core.types import DataLoader, Dataset
 from composer.datasets.dataloader import DataLoaderHparams
+from dataclasses import dataclass
+from lth_diet.data.data import DataHparams
+from lth_diet.utils import utils
+import os
+from pathlib import Path
 from torch.utils.data import Sampler
 from torchvision import transforms
 from torchvision.datasets import CIFAR10
-
-from lth_diet.data.data import DataHparams
-from lth_diet.utils import utils
 
 
 @dataclass
@@ -21,7 +19,7 @@ class CIFAR10DataHparams(DataHparams):
 
     def get_dataset(self) -> Dataset:
         cifar10_mean, cifar10_std = [0.4914, 0.4822, 0.4465], [0.247, 0.243, 0.261]
-        datadir = Path(self.datadir if self.datadir else os.environ["DATADIR"]) / "cifar10"
+        datadir = Path(os.environ["DATADIR"] if self.datadir is None else self.datadir) / "cifar10"
         if self.train and not self.no_augment:
             transform = transforms.Compose(
                 [
