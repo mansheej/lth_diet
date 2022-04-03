@@ -3,7 +3,6 @@ from dataclasses import fields
 from enum import Enum
 import hashlib
 from libcloud.storage.types import ObjectDoesNotExistError
-from pathlib import Path
 from typing import List, Optional
 import yahp as hp
 from composer.utils import ObjectStoreProvider
