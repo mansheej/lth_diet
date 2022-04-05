@@ -1,12 +1,10 @@
-from dataclasses import dataclass
-from typing import List
-
-import yahp as hp
 from composer.models import ComposerClassifier, Initializer
 from composer.models.resnets import CIFAR_ResNet
-
+from dataclasses import dataclass
 from lth_diet.models.classifier import ComposerClassifierHparams
 from lth_diet.utils import utils
+from typing import List
+import yahp as hp
 
 
 @dataclass
