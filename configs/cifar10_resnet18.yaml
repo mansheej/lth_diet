@@ -4,6 +4,7 @@ model:
   resnet:
     num_classes: 10
     num_layers: 18
+    low_res: true
 # data
 train_data:
   cifar10:
