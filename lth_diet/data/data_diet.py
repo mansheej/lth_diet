@@ -1,6 +1,7 @@
 from composer.core.types import Dataset
 from composer.utils.object_store import ObjectStoreProvider
 from composer.utils.run_directory import get_run_directory
+from coolname import generate_slug
 from dataclasses import dataclass
 from lth_diet.data.dataset_transform import DatasetTransform
 from lth_diet.utils import utils
@@ -94,7 +95,8 @@ class SubsetByScore(DatasetTransform):
         assert not (
             self.left_offset is not None and self.right_offset is not None
         ), "Left and right offset are mutually exclusive, cannot specify both"
-        score_path = os.path.join(get_run_directory(), f"scores/{self.score}")
+        os.makedirs(os.path.join(get_run_directory(), "scores"), exist_ok=True)
+        score_path = os.path.join(get_run_directory(), f"scores/{generate_slug()}_{self.score}")
         object_store.download_object(object_name, score_path)
         scores = np.load(score_path)
         sort_idxs = np.argsort(scores)
@@ -108,4 +110,5 @@ class SubsetByScore(DatasetTransform):
             dataset = self._get_class_balanced_subset(dataset, size, offset, sort_idxs)
         else:
             dataset = self._get_subset(dataset, size, offset, sort_idxs)
+        os.remove(score_path)
         return dataset
