@@ -5,7 +5,7 @@ from composer.core.types import Precision
 from composer.datasets import DataLoaderHparams
 from composer.loggers import FileLoggerHparams, LoggerCallbackHparams, TQDMLoggerHparams, WandBLoggerHparams
 from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
-from composer.optim.scheduler_hparams import MultiStepSchedulerHparams
+from composer.optim.scheduler_hparams import MultiStepSchedulerHparams, MultiStepWithWarmupSchedulerHparams
 from composer.trainer import Trainer
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
 from composer.utils import dist, ObjectStoreProviderHparams, reproducibility, run_directory
@@ -23,7 +23,7 @@ import yahp as hp
 
 
 optimizer_registry = {"sgd": SGDHparams}
-scheduler_registry = {"multistep": MultiStepSchedulerHparams}
+scheduler_registry = {"multistep": MultiStepSchedulerHparams, "multistep_warmup": MultiStepWithWarmupSchedulerHparams}
 logger_registry = {"file": FileLoggerHparams, "wandb": WandBLoggerHparams, "tqdm": TQDMLoggerHparams}
 callback_registry = {"lr_monitor": LRMonitorHparams, "grad_monitor": GradMonitorHparams}
 device_registry = {"gpu": GPUDeviceHparams, "cpu": CPUDeviceHparams}
