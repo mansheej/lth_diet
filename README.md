@@ -1,0 +1,1 @@
+# The Lottery Ticket Hypothesis on a Data Diet
