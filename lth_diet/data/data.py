@@ -28,12 +28,17 @@ class DataHparams(hp.Hparams, abc.ABC):
     data_dir: Optional[str] = hp.optional("Default: use environment variable DATA_DIR", default=None)
 
     @abc.abstractmethod
-    def get_dataset(self, data_dir: str, shuffle: bool, no_augment: bool) -> Dataset:
+    def get_dataset(self, data_dir: str, no_augment: bool) -> Dataset:
         ...
 
     @abc.abstractmethod
     def get_data(
-        self, dataset: Dataset, batch_size: int, sampler: Sampler, dataloader_hparams: DataLoaderHparams
+        self,
+        dataset: Dataset,
+        batch_size: int,
+        sampler: Sampler,
+        drop_last: bool,
+        dataloader_hparams: DataLoaderHparams,
     ) -> DataLoader | DataSpec:
         ...
 
@@ -48,10 +53,10 @@ class DataHparams(hp.Hparams, abc.ABC):
         dataset_transforms = utils.maybe_set_default(self.dataset_transforms, default=[])
         data_dir = utils.maybe_set_default(self.data_dir, default=os.environ["DATA_DIR"])
         # Get and transform dataset
-        dataset = self.get_dataset(data_dir, shuffle, no_augment)
+        dataset = self.get_dataset(data_dir, no_augment)
         for transform in dataset_transforms:
             dataset = transform.apply(dataset, **kwargs)
         # Sampler and Dataloader | DataSpec
         sampler = dist.get_sampler(dataset, drop_last=drop_last, shuffle=shuffle)
-        data = self.get_data(dataset, batch_size, sampler, dataloader_hparams)
+        data = self.get_data(dataset, batch_size, sampler, drop_last, dataloader_hparams)
         return data

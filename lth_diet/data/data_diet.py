@@ -58,4 +58,5 @@ class RandomSubset(DatasetTransform):
 
 @dataclasses.dataclass
 class SubsetByScore(DatasetTransform):
-    pass
+    def apply(self, dataset: Dataset, **kwargs) -> Dataset:
+        raise NotImplementedError
