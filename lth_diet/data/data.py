@@ -4,6 +4,7 @@ from composer.core.types import DataLoader, DataSpec, Dataset
 from composer.datasets.dataloader import DataLoaderHparams
 from composer.utils import dist
 import dataclasses
+from lth_diet.data.data_diet import RandomSubset, SubsetByScore
 from lth_diet.data.dataset_transform import DatasetTransform
 import os
 from torch.utils.data import Sampler
@@ -11,11 +12,11 @@ from typing import List, Optional
 import yahp as hp
 
 
-dataset_transform_registry = {}
+dataset_transform_registry = {"random_subset": RandomSubset, "subset_by_score": SubsetByScore}
 
 
 @dataclasses.dataclass
-class Data(hp.Hparams, abc.ABC):
+class DataHparams(hp.Hparams, abc.ABC):
     # Dataset specific params as fields
     hparams_registry = {"dataset_transforms": dataset_transform_registry}
     train: bool = hp.required("Load training data")
