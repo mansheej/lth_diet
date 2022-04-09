@@ -6,6 +6,7 @@ from composer.utils import dist
 import dataclasses
 from lth_diet.data.data_diet import RandomSubset, SubsetByScore
 from lth_diet.data.dataset_transform import DatasetTransform
+from lth_diet.utils import utils
 import os
 from torch.utils.data import Sampler
 from typing import List, Optional
@@ -41,11 +42,11 @@ class DataHparams(hp.Hparams, abc.ABC):
     ) -> DataLoader | DataSpec:
         # Non dataset specific params as args, kwargs for optional dataset transforms
         # Set defaults for None fields
-        shuffle = self.train if self.shuffle is None else self.shuffle
-        drop_last = self.train if self.drop_last is None else self.drop_last
-        no_augment = False if self.no_augment is None else self.no_augment
-        dataset_transforms = [] if self.dataset_transforms is None else self.dataset_transforms
-        data_dir = os.environ["DATA_DIR"] if self.data_dir is None else self.data_dir
+        shuffle = utils.maybe_set_default(self.shuffle, default=self.train)
+        drop_last = utils.maybe_set_default(self.drop_last, default=self.train)
+        no_augment = utils.maybe_set_default(self.no_augment, default=False)
+        dataset_transforms = utils.maybe_set_default(self.dataset_transforms, default=[])
+        data_dir = utils.maybe_set_default(self.data_dir, default=os.environ["DATA_DIR"])
         # Get and transform dataset
         dataset = self.get_dataset(data_dir, shuffle, no_augment)
         for transform in dataset_transforms:

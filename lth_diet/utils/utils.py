@@ -2,7 +2,7 @@ from __future__ import annotations
 import dataclasses
 from enum import Enum
 import hashlib
-from typing import List, Optional
+from typing import Any, List, Optional
 import yahp as hp
 
 
@@ -33,3 +33,7 @@ def get_hparams_name(hparams: hp.Hparams, prefix: Optional[str] = None, ignore_f
 
 def get_hash(string: str) -> str:
     return hashlib.md5(string.encode("utf-8")).hexdigest()
+
+
+def maybe_set_default(value: Optional[Any], default: Any) -> Any:
+    return default if value is None else value
