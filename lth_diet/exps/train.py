@@ -76,9 +76,11 @@ class TrainExperiment(hp.Hparams):
         assert self.train_batch_size % dist.get_world_size() == 0, "Train batch size not div by number of processes"
         assert self.val_batch_size % dist.get_world_size() == 0, "Val batch size not div by number of processes"
 
-        # Name experiment; if it has already been completed, abort
+        # Name experiment
         exp_hash = utils.get_hash(self.name)
         exp_name = f"{exp_hash}/replicate_{self.replicate}/main"
+
+        # If experiment completed, abort
         object_name = f"{os.environ['OBJECT_STORE_DIR']}/{exp_name}/model_final.pt"
         object_store = None if self.object_store is None else self.object_store.initialize_object()
         if utils.object_exists_in_bucket(object_name, object_store):
