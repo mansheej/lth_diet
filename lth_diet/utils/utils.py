@@ -1,7 +1,9 @@
 from __future__ import annotations
+from composer.utils import ObjectStoreProvider
 import dataclasses
 from enum import Enum
 import hashlib
+from libcloud.storage.types import ObjectDoesNotExistError
 from typing import Any, List, Optional
 import yahp as hp
 
@@ -37,3 +39,13 @@ def get_hash(string: str) -> str:
 
 def maybe_set_default(value: Optional[Any], default: Any) -> Any:
     return default if value is None else value
+
+
+def object_exists_in_bucket(object_name: str, object_store: Optional[ObjectStoreProvider]) -> bool:
+    if object_store is None:
+        return False
+    try:
+        object_store.get_object_size(object_name)
+    except ObjectDoesNotExistError:
+        return False
+    return True
