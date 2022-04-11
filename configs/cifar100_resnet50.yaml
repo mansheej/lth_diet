@@ -1,0 +1,48 @@
+seed: 1234
+# model
+model:
+  resnet:
+    num_classes: 100
+    num_layers: 50
+    low_res: true
+# data
+train_data:
+  cifar100:
+    train: true
+val_data:
+  cifar100:
+    train: false
+# training:
+train_batch_size: 128
+val_batch_size: 1000
+optimizer:
+  sgd:
+    lr: 0.1
+    momentum: 0.9
+    weight_decay: 0.0005
+    nesterov: true
+schedulers:
+  multistep:
+    milestones:
+    - 23400ba
+    - 46800ba
+    - 62400ba
+    gamma: 0.2
+max_duration: 78000ba
+algorithms:
+  channels_last: {}
+callbacks:
+  lr_monitor: {}
+loggers:
+  file:
+    filename: log.txt
+    log_level: 3
+  wandb:
+    project: lth_diet
+    entity: prunes
+dataloader:
+  persistent_workers: false
+object_store:
+  provider: google_storage
+  container: prunes
+  key_environ: GCS_KEY
