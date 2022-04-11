@@ -21,7 +21,7 @@ class ResNetClassifierHparams(ClassifierHparams):
         low_res = utils.maybe_set_default(self.low_res, False)
         if self.num_layers == 18:
             model = models.resnet18(pretrained=False, num_classes=self.num_classes)
-        elif self.num_classes == 50:
+        elif self.num_layers == 50:
             model = models.resnet50(pretrained=False, num_classes=self.num_classes)
         else:
             raise ValueError("Currently supported: num_layers in [18, 50]")
