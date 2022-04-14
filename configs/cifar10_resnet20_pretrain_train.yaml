@@ -5,6 +5,9 @@ model:
     num_classes: 10
     num_layers: 20
 # data
+pretrain_data:
+  cifar10:
+    train: true
 train_data:
   cifar10:
     train: true
@@ -12,20 +15,29 @@ val_data:
   cifar10:
     train: false
 # training:
+pretrain_batch_size: 1024
 train_batch_size: 1024
 val_batch_size: 1000
-optimizer:
+pretrain_optimizer:
   sgd:
-    lr: 0.8
+    lr: 1.6
     momentum: 0.9
     weight_decay: 0.0001
+optimizer:
+  sgd:
+    lr: 1.6
+    momentum: 0.9
+    weight_decay: 0.0001
+pretrain_schedulers:
+  constant:
+    alpha: 1.0
 schedulers:
-  multistep_warmup:
-    t_warmup: 192ba
+  multistep:
     milestones:
     - 3840ba
     - 5760ba
     gamma: 0.1
+pretrain_duration: 384ba
 max_duration: 7680ba
 algorithms:
   channels_last: {}
@@ -34,7 +46,6 @@ callbacks:
 # boilerplate
 loggers:
   file:
-    filename: log.txt
     log_level: 3
   wandb:
     project: lth_diet
