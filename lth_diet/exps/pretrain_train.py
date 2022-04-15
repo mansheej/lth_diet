@@ -173,6 +173,7 @@ class PretrainAndTrainExperiment(hp.Hparams):
             elif isinstance(logger, WandBLoggerHparams):
                 logger.name = f"{exp_hash}_{self.replicate}_{phase}"
                 logger.group = exp_hash
+                logger.extra_init_params = {}  # HACK: prevent config from getting logged twice
                 save_wandb_run_id = True
         config_dict = self.to_dict()
         loggers = [x.initialize_object(config=config_dict) for x in self.loggers]
