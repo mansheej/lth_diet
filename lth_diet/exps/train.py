@@ -129,7 +129,7 @@ class TrainExperiment(hp.Hparams):
         save_wandb_run_id = False
         for logger in self.loggers:
             if isinstance(logger, FileLoggerHparams):
-                logger.filename = os.path.join(exp_dir, logger.filename)
+                logger.filename = os.path.join(exp_dir, "log.txt")
                 logger.flush_interval = len(train_dataloader)
             elif isinstance(logger, WandBLoggerHparams):
                 logger.name = f"{exp_hash}_{self.replicate}"

@@ -35,7 +35,6 @@ callbacks:
   lr_monitor: {}
 loggers:
   file:
-    filename: log.txt
     log_level: 3
   wandb:
     project: lth_diet
