@@ -22,10 +22,10 @@ optimizer:
 schedulers:
   multistep:
     milestones:
-    - 3840ba
-    - 5760ba
+    - 3920ba
+    - 5880ba
     gamma: 0.1
-max_duration: 7680ba
+max_duration: 7840ba
 algorithms:
   channels_last: {}
 callbacks:
