@@ -1,6 +1,5 @@
-from __future__ import annotations
 from composer.algorithms import AlgorithmHparams, get_algorithm_registry
-from composer.callbacks import CallbackHparams, GradMonitorHparams, LRMonitorHparams
+from composer.callbacks import CallbackHparams, CheckpointSaver, GradMonitorHparams, LRMonitorHparams
 from composer.core.precision import Precision
 from composer.datasets import DataLoaderHparams
 from composer.loggers import (
@@ -8,19 +7,18 @@ from composer.loggers import (
     LoggerCallbackHparams,
     TQDMLoggerHparams,
     WandBLoggerHparams,
-    WandBLogger,
 )
+from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
 from composer.optim import (
-    OptimizerHparams,
-    SGDHparams,
     ConstantSchedulerHparams,
+    LinearSchedulerHparams,
     MultiStepSchedulerHparams,
     MultiStepWithWarmupSchedulerHparams,
-    SchedulerHparams,
 )
 from composer.trainer import Trainer
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
-from composer.utils import dist, ObjectStoreProviderHparams, reproducibility, run_directory, save_checkpoint
+from composer.utils import dist, ObjectStoreProviderHparams, reproducibility, run_directory
+from copy import deepcopy
 import dataclasses
 from lth_diet.data import DataHparams, data_registry
 from lth_diet.models import ClassifierHparams, model_registry
@@ -33,9 +31,10 @@ import wandb
 import yahp as hp
 
 
-optimizer_hparams = {"sgd": SGDHparams}
-scheduler_hparams = {
+optimizer_registry = {"sgd": SGDHparams}
+scheduler_registry = {
     "constant": ConstantSchedulerHparams,
+    "linear": LinearSchedulerHparams,
     "multistep": MultiStepSchedulerHparams,
     "multistep_warmup": MultiStepWithWarmupSchedulerHparams,
 }
@@ -43,11 +42,10 @@ hparams_registry = {
     "model": model_registry,
     "pretrain_data": data_registry,
     "train_data": data_registry,
+    "optimizer": optimizer_registry,
+    "pretrain_schedulers": scheduler_registry,
+    "schedulers": scheduler_registry,
     "val_data": data_registry,
-    "pretrain_optimizer": optimizer_hparams,
-    "optimizer": optimizer_hparams,
-    "pretrain_schedulers": scheduler_hparams,
-    "schedulers": scheduler_hparams,
     "algorithms": get_algorithm_registry(),
     "callbacks": {"lr_monitor": LRMonitorHparams, "grad_monitor": GradMonitorHparams},
     "loggers": {"file": FileLoggerHparams, "wandb": WandBLoggerHparams, "tqdm": TQDMLoggerHparams},
@@ -62,22 +60,21 @@ class PretrainAndTrainExperiment(hp.Hparams):
     model: ClassifierHparams = hp.required("Classifier hparams")
     pretrain_data: DataHparams = hp.required("Pretraining data hparams")
     train_data: DataHparams = hp.required("Training data hparams")
-    pretrain_batch_size: int = hp.required("Total across devices and grad accumulations")
-    train_batch_size: int = hp.required("Total across devices and grad accumulations")
-    pretrain_optimizer: OptimizerHparams = hp.required("Pretraining optimizer hparams")
+    pretrain_batch_size: int = hp.required("Pretrain batch size, total across devices and grad accumulations")
+    train_batch_size: int = hp.required("Training batch size, total across devices and grad accumulations")
     optimizer: OptimizerHparams = hp.required("Optimizer hparams")
     pretrain_schedulers: List[SchedulerHparams] = hp.required("Pretraining scheduler sequence")
     schedulers: List[SchedulerHparams] = hp.required("Scheduler sequence")
-    pretrain_duration: str = hp.required("Pretraining time string, ep=epoch, ba=batch")
-    max_duration: str = hp.required("Max training time string, ep=epoch, ba=batch")
+    pretrain_duration: str = hp.required("Time string for total pretraining, ep=epoch, ba=batch")
+    max_duration: str = hp.required("Time string for total training, ep=epoch, ba=batch")
     val_data: DataHparams = hp.required("Validation data hparams")
-    val_batch_size: int = hp.required("Total across devices and grad accumulations")
+    val_batch_size: int = hp.required("Validation batch size, total across devices")
     # optional fields
     replicate: int = hp.optional("Replicate number", default=0)
     seed: int = hp.optional("seed = seed * (replicate + 1)", default=42)
     grad_clip_norm: Optional[float] = hp.optional("None => no gradient clipping", default=None)
     algorithms: Optional[List[AlgorithmHparams]] = hp.optional("None => []", default=None)
-    callbacks: List[CallbackHparams] = hp.optional("(Default: []).", default_factory=list)
+    callbacks: Optional[List[CallbackHparams]] = hp.optional("None => []", default=None)
     loggers: List[LoggerCallbackHparams] = hp.optional("(Default: []).", default_factory=list)
     dataloader: DataLoaderHparams = hp.optional("Default: composer defaults", default=DataLoaderHparams())
     device: DeviceHparams = hp.optional("Device", default=GPUDeviceHparams())
@@ -87,20 +84,20 @@ class PretrainAndTrainExperiment(hp.Hparams):
 
     @property
     def name(self) -> str:
-        ignore_fields = ["val_data", "val_batch_size", "replicate", "loggers", "dataloader", "device", "object_store"]
-        ignore_fields += ["get_name"]
+        ignore_fields = ["val_data", "val_batch_size", "replicate", "loggers", "dataloader", "device", "precision"]
+        ignore_fields += ["object_store", "get_name"]
         name = utils.get_hparams_name(self, prefix="PretrainTrain", ignore_fields=ignore_fields)
         return name
 
     def _train(self, pretrain: bool) -> None:
-        # Name experiment
+        # Experiment name
         exp_hash = utils.get_hash(self.name)
         phase = "pretrain" if pretrain else "train"
         exp_name = f"{exp_hash}/replicate_{self.replicate}/{phase}/main"
 
         # If experiment completed, abort
-        object_name = f"{os.environ['OBJECT_STORE_DIR']}/{exp_name}/state_final.pt"
         object_store = None if self.object_store is None else self.object_store.initialize_object()
+        object_name = f"{os.environ['OBJECT_STORE_DIR']}/{exp_name}/state_final.pt"
         if utils.object_exists_in_bucket(object_name, object_store):
             print(f"{object_name} exists in bucket")
             return
@@ -154,29 +151,36 @@ class PretrainAndTrainExperiment(hp.Hparams):
             val_device_batch_size, self.dataloader, replicate=self.replicate, object_store=object_store
         )
 
-        # Initialize optimizer and schedulers
-        optimizer_hparams = self.pretrain_optimizer if pretrain else self.optimizer
-        scheduler_hparams = self.pretrain_schedulers if pretrain else self.schedulers
-        optimizer = optimizer_hparams.initialize_object(model.parameters())
-        schedulers = [x.initialize_object() for x in scheduler_hparams]
+        # Initialize optimizer and schedulers, same optimizer hparam used by pretrain and train phases
+        optimizer = deepcopy(self.optimizer).initialize_object(model.parameters())
+        schedulers = self.pretrain_schedulers if pretrain else self.schedulers
+        schedulers = [x.initialize_object() for x in schedulers]
 
-        # Initialize algorithms and callbacks
-        algorithms = [] if self.algorithms is None else [x.initialize_object() for x in self.algorithms]
-        callbacks = [x.initialize_object() for x in self.callbacks]
+        # Initialize algorithms and callbacks, deepcopy because used by pretrain and train phases
+        # CheckpointSaver saves final state
+        algorithms = [] if self.algorithms is None else [deepcopy(x).initialize_object() for x in self.algorithms]
+        callbacks = [] if self.callbacks is None else [deepcopy(x).initialize_object() for x in self.callbacks]
+        callbacks.append(
+            CheckpointSaver(
+                save_folder=exp_dir,
+                name_format="state_final.pt",
+                save_latest_format=None,
+                save_interval=utils.save_final,
+            )
+        )
 
-        # Configure and initialize loggers
-        save_wandb_run_id = False
+        # Configure and initialize loggers, deepcopy because used by pretrain and train phases
+        loggers, config_dict, save_wandb_run_id = [], self.to_dict(), False
         for logger in self.loggers:
+            logger = deepcopy(logger)
             if isinstance(logger, FileLoggerHparams):
                 logger.filename = os.path.join(exp_dir, "log.txt")
                 logger.flush_interval = len(train_dataloader)
             elif isinstance(logger, WandBLoggerHparams):
                 logger.name = f"{exp_hash}_{self.replicate}_{phase}"
                 logger.group = exp_hash
-                logger.extra_init_params = {}  # HACK: prevent config from getting logged twice
                 save_wandb_run_id = True
-        config_dict = self.to_dict()
-        loggers = [x.initialize_object(config=config_dict) for x in self.loggers]
+            loggers.append(logger.initialize_object(config=config_dict))
 
         # Initialize trainer
         duration = self.pretrain_duration if pretrain else self.max_duration
@@ -207,10 +211,6 @@ class PretrainAndTrainExperiment(hp.Hparams):
         # Train model
         trainer.fit()
 
-        # Save final state (HACK: drop WandBLogger from the state so that it can be saved outside the trainer)
-        trainer.state.callbacks = [c for c in trainer.state.callbacks if not isinstance(c, WandBLogger)]
-        save_checkpoint(trainer.state, os.path.join(exp_dir, "state_final.pt"))
-
         # If object store is provided, upload files to the cloud and clean up local directory
         if object_store is not None:
             for obj in os.listdir(exp_dir):
@@ -225,7 +225,7 @@ class PretrainAndTrainExperiment(hp.Hparams):
         # Assert batch sizes
         assert (
             self.pretrain_batch_size % dist.get_world_size() == 0
-        ), "Pretrain batch size not div by number of processes"
+        ), "Pretrain batch size not divisible by number of processes"
         assert self.train_batch_size % dist.get_world_size() == 0, "Train batch size not div by number of processes"
         assert self.val_batch_size % dist.get_world_size() == 0, "Val batch size not div by number of processes"
 

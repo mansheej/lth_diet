@@ -1,4 +1,3 @@
-from __future__ import annotations
 from composer.algorithms import AlgorithmHparams, get_algorithm_registry
 from composer.callbacks import CallbackHparams, GradMonitorHparams, LRMonitorHparams
 from composer.core.precision import Precision
@@ -56,7 +55,7 @@ class TrainExperiment(hp.Hparams):
     seed: int = hp.optional("seed = seed * (replicate + 1)", default=42)
     grad_clip_norm: Optional[float] = hp.optional("None => no gradient clipping", default=None)
     algorithms: Optional[List[AlgorithmHparams]] = hp.optional("None => []", default=None)
-    callbacks: List[CallbackHparams] = hp.optional("(Default: []).", default_factory=list)
+    callbacks: Optional[List[CallbackHparams]] = hp.optional("None => []", default=None)
     loggers: List[LoggerCallbackHparams] = hp.optional("(Default: []).", default_factory=list)
     dataloader: DataLoaderHparams = hp.optional("Default: composer defaults", default=DataLoaderHparams())
     device: DeviceHparams = hp.optional("Device", default=GPUDeviceHparams())
@@ -123,7 +122,7 @@ class TrainExperiment(hp.Hparams):
 
         # Initialize algorithms and callbacks
         algorithms = [] if self.algorithms is None else [x.initialize_object() for x in self.algorithms]
-        callbacks = [x.initialize_object() for x in self.callbacks]
+        callbacks = [] if self.callbacks is None else [x.initialize_object() for x in self.callbacks]
 
         # Configure and initialize loggers
         save_wandb_run_id = False

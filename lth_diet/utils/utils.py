@@ -1,4 +1,5 @@
 from __future__ import annotations
+from composer.core import Event, State
 from composer.utils import ObjectStoreProvider
 import dataclasses
 from enum import Enum
@@ -49,3 +50,9 @@ def object_exists_in_bucket(object_name: str, object_store: Optional[ObjectStore
     except ObjectDoesNotExistError:
         return False
     return True
+
+
+def save_final(state: State, event: Event) -> bool:
+    if event == Event.EPOCH_CHECKPOINT and state.timer >= state.max_duration:
+        return True
+    return False
