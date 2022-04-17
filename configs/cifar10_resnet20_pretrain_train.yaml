@@ -18,23 +18,15 @@ val_data:
 pretrain_batch_size: 1024
 train_batch_size: 1024
 val_batch_size: 1000
-pretrain_optimizer:
-  sgd:
-    lr: 1.6
-    momentum: 0.9
-    weight_decay: 0.0001
 optimizer:
   sgd:
     lr: 1.6
     momentum: 0.9
     weight_decay: 0.0001
 pretrain_schedulers:
-  multistep_warmup:
-    t_warmup: 384ba
-    milestones:
-    - 3840ba
-    - 5760ba
-    gamma: 0.1
+  linear:
+    alpha_i: 0.0
+    alpha_f: 1.0
 schedulers:
   multistep:
     milestones:
