@@ -20,7 +20,7 @@ train_batch_size: 1024
 val_batch_size: 1000
 optimizer:
   sgd:
-    lr: 1.6
+    lr: 3.2
     momentum: 0.9
     weight_decay: 0.0001
 pretrain_schedulers:
@@ -32,7 +32,7 @@ schedulers:
     - 3920ba
     - 5880ba
     gamma: 0.1
-pretrain_duration: 400ba
+pretrain_duration: 1600ba
 max_duration: 7840ba
 algorithms:
   channels_last: {}
