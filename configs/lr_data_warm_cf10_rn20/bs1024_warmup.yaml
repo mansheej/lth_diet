@@ -16,12 +16,12 @@ train_batch_size: 1024
 val_batch_size: 1000
 optimizer:
   sgd:
-    lr: 1.6
+    lr: 3.2
     momentum: 0.9
     weight_decay: 0.0001
 schedulers:
   multistep_warmup:
-    t_warmup: 400ba
+    t_warmup: 1600ba
     milestones:
     - 3920ba
     - 5880ba
