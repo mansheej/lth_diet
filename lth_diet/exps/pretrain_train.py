@@ -2,12 +2,7 @@ from composer.algorithms import AlgorithmHparams, get_algorithm_registry
 from composer.callbacks import CallbackHparams, CheckpointSaver, GradMonitorHparams, LRMonitorHparams
 from composer.core.precision import Precision
 from composer.datasets import DataLoaderHparams
-from composer.loggers import (
-    FileLoggerHparams,
-    LoggerCallbackHparams,
-    TQDMLoggerHparams,
-    WandBLoggerHparams,
-)
+from composer.loggers import FileLoggerHparams, LoggerCallbackHparams, TQDMLoggerHparams, WandBLoggerHparams
 from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
 from composer.optim import (
     ConstantSchedulerHparams,

@@ -3,12 +3,12 @@ from composer.callbacks import CallbackHparams, GradMonitorHparams, LRMonitorHpa
 from composer.core.precision import Precision
 from composer.datasets import DataLoaderHparams
 from composer.loggers import FileLoggerHparams, LoggerCallbackHparams, TQDMLoggerHparams, WandBLoggerHparams
+from composer.optim import OptimizerHparams, SchedulerHparams, SGDHparams
 from composer.optim import (
-    OptimizerHparams,
+    ConstantSchedulerHparams,
+    LinearSchedulerHparams,
     MultiStepSchedulerHparams,
     MultiStepWithWarmupSchedulerHparams,
-    SchedulerHparams,
-    SGDHparams,
 )
 from composer.trainer import Trainer
 from composer.trainer.devices import CPUDeviceHparams, DeviceHparams, GPUDeviceHparams
@@ -25,12 +25,18 @@ import wandb
 import yahp as hp
 
 
+scheduler_registry = {
+    "constant": ConstantSchedulerHparams,
+    "linear": LinearSchedulerHparams,
+    "multistep": MultiStepSchedulerHparams,
+    "multistep_warmup": MultiStepWithWarmupSchedulerHparams,
+}
 hparams_registry = {
     "model": model_registry,
     "train_data": data_registry,
     "val_data": data_registry,
     "optimizer": {"sgd": SGDHparams},
-    "schedulers": {"multistep": MultiStepSchedulerHparams, "multistep_warmup": MultiStepWithWarmupSchedulerHparams},
+    "schedulers": scheduler_registry,
     "algorithms": get_algorithm_registry(),
     "callbacks": {"lr_monitor": LRMonitorHparams, "grad_monitor": GradMonitorHparams},
     "loggers": {"file": FileLoggerHparams, "wandb": WandBLoggerHparams, "tqdm": TQDMLoggerHparams},
