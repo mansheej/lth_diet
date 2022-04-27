@@ -25,7 +25,7 @@ class PrunedClassifier(ComposerClassifier):
         for k in prunable_layer_names(self):  # check prunable parameters have corresponding masks with correct shapes
             if k not in mask:
                 raise ValueError(f"Missing mask value {k}")
-            if not np.array_equal(mask[k].shape, np.array(self.module.state_dict()[k].shape)):
+            if not np.array_equal(mask[k].shape, np.array(self.state_dict()[k].shape)):
                 raise ValueError(f"Incorrect mask shape {mask[k].shape} for tensor {k}")
 
         for k in mask:  # check all masks correspond to prunable layers
