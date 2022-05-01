@@ -158,7 +158,7 @@ class LotteryExperiment(hp.Hparams):
                 logger.filename = utils.get_local_path(location, "log.txt")
                 logger.flush_interval = len(train_dataloader)
             elif isinstance(logger, WandBLoggerHparams):
-                logger.name = f"{exp_hash}_{self.replicate}"
+                logger.name = f"{exp_hash}_{self.replicate}_{level}"
                 logger.group = exp_hash
                 save_wandb_run_id = True
             loggers.append(logger.initialize_object(config=config_dict))
