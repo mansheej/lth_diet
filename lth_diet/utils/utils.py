@@ -1,12 +1,15 @@
 from __future__ import annotations
-from composer.core import Event, State
-from composer.utils import ObjectStoreProvider
+
 import dataclasses
-from enum import Enum
 import hashlib
-from libcloud.storage.types import ObjectDoesNotExistError
-from typing import Any, List, Optional
+import os
+from enum import Enum
+from typing import Any, Callable, List, Optional
+
 import yahp as hp
+from composer.core import Event, State
+from composer.utils import ObjectStoreProvider, run_directory
+from libcloud.storage.types import ObjectDoesNotExistError
 
 
 def field_val_to_str(field: bool | float | int | str | Enum | List | hp.Hparams) -> str:
@@ -42,6 +45,64 @@ def maybe_set_default(value: Optional[Any], default: Any) -> Any:
     return default if value is None else value
 
 
+def save_final(state: State, event: Event) -> bool:
+    if event == Event.EPOCH_CHECKPOINT and state.timer >= state.max_duration:
+        return True
+    return False
+
+
+def get_object_name(location: str, name: str) -> str:
+    return os.path.join(os.environ["OBJECT_STORE_DIR"], location, name)
+
+
+def get_local_dir(location: str) -> str:
+    return os.path.join(run_directory.get_run_directory(), location)
+
+
+def get_local_path(location: str, name: str) -> str:
+    return os.path.join(run_directory.get_run_directory(), location, name)
+
+
+def save_object(
+    object_to_save: Any,
+    location: str,
+    name: str,
+    object_store: ObjectStoreProvider,
+    save_fn: Callable[[Any, str], None],
+) -> None:
+    # make local dir if it doesn't exist
+    local_dir = get_local_dir(location)
+    if not os.path.exists(local_dir):
+        os.makedirs(local_dir)
+    # save object to local path
+    local_path = get_local_path(location, name)
+    save_fn(object_to_save, local_path)
+    # upload object to bucket
+    object_name = get_object_name(location, name)
+    object_store.upload_object(local_path, object_name)
+    # delete local copy
+    os.remove(local_path)
+
+
+def load_object(location: str, name: str, object_store: ObjectStoreProvider, load_fn: Callable[[str], Any]) -> Any:
+    # loads object location/name from object_store only, no local effects
+    object_name = get_object_name(location, name)
+    # check object exists
+    if not object_exists_in_bucket(object_name, object_store):
+        raise ValueError(f"Object {object_name} does not exist is object store")
+    # make local location if it doesn't exist
+    local_dir = get_local_dir(location)
+    if not os.path.exists(local_dir):
+        os.makedirs(local_dir)
+    # download object to local path, overwrites existing if necessary
+    local_path = get_local_path(location, name)
+    object_store.download_object(object_name, local_path, overwrite_existing=True)
+    # load object and delete local copy
+    loaded_object = load_fn(local_path)
+    os.remove(local_path)
+    return loaded_object
+
+
 def object_exists_in_bucket(object_name: str, object_store: Optional[ObjectStoreProvider]) -> bool:
     if object_store is None:
         return False
@@ -50,9 +111,3 @@ def object_exists_in_bucket(object_name: str, object_store: Optional[ObjectStore
     except ObjectDoesNotExistError:
         return False
     return True
-
-
-def save_final(state: State, event: Event) -> bool:
-    if event == Event.EPOCH_CHECKPOINT and state.timer >= state.max_duration:
-        return True
-    return False
