@@ -58,7 +58,7 @@ hparams_registry = {
 
 @dataclasses.dataclass
 class LotteryExperiment(hp.Hparams):
-    hparams_registry = {}
+    hparams_registry = hparams_registry
     # required fields
     model: ClassifierHparams = hp.required("Classifier hparams")
     train_data: DataHparams = hp.required("Training data hparams")
@@ -199,7 +199,7 @@ class LotteryExperiment(hp.Hparams):
         trainer.fit()
 
         # Save final model
-        torch.save(model.state_dict(), utils.get_local_path(location, "model_final.pt"))
+        torch.save(model.module.state_dict(), utils.get_local_path(location, "model_final.pt"))
 
         # Upload files to the cloud and clean up local directory
         for obj in os.listdir(utils.get_local_dir(location)):
@@ -227,7 +227,7 @@ class LotteryExperiment(hp.Hparams):
         seed = self.seed * (self.replicate + 1)  # Adjust seed for replicate
         reproducibility.seed_all(seed)  # Seed rngs before randomly initializing the model
         model = deepcopy(self.model).initialize_object()
-        torch.save(model.state_dict(), utils.get_local_path(location, "model_init.pt"))
+        torch.save(model.module.state_dict(), utils.get_local_path(location, "model_init.pt"))
 
         # set level specific hparams
         train_data = utils.maybe_set_default(self.pretrain_data, default=deepcopy(self.train_data))
@@ -263,7 +263,7 @@ class LotteryExperiment(hp.Hparams):
             seed = self.seed * (self.replicate + 1)  # Adjust seed for replicate
             reproducibility.seed_all(seed)  # Seed rngs before randomly initializing the model
             model = deepcopy(self.model).initialize_object()
-            torch.save(model.state_dict(), save_path)
+            torch.save(model.module.state_dict(), save_path)
         # if there is a pretrain model_final, save it as level_0 model_init
         else:
             pretrain_location = f"{exp_hash}/replicate_{self.replicate}/pretrain/main"
@@ -275,7 +275,7 @@ class LotteryExperiment(hp.Hparams):
 
     def _prune_level(self, level: int, exp_hash: str, object_store: ObjectStoreProvider) -> None:
         location = f"{exp_hash}/replicate_{self.replicate}/level_{level}/main"
-        if Mask.exists(location):
+        if Mask.exists(location, object_store):
             return
 
         if level == 0:
@@ -284,7 +284,7 @@ class LotteryExperiment(hp.Hparams):
             old_location = f"{exp_hash}/replicate_{self.replicate}/level_{level-1}/main"
             state_dict = utils.load_object(old_location, "model_final.pt", object_store, torch.load)
             model = deepcopy(self.model).initialize_object()
-            model.load_state_dict(state_dict)  # this is now the final model from level-1
+            model.module.load_state_dict(state_dict)  # this is now the final model from level-1
             mask = self.pruning.prune(model, Mask.load(old_location, object_store))
             mask.save(location, object_store)
 
@@ -298,7 +298,7 @@ class LotteryExperiment(hp.Hparams):
             return
 
         # print and make local directory, save hparams
-        print("-" * 80 + "\nTraining Level {level}\n" + "-" * 80)
+        print("-" * 80 + f"\nTraining Level {level}\n" + "-" * 80)
         if os.path.exists(utils.get_local_dir(location)):  # setup local exp dir
             shutil.rmtree(utils.get_local_dir(location))
         os.makedirs(utils.get_local_dir(location))
@@ -310,9 +310,9 @@ class LotteryExperiment(hp.Hparams):
         init_location = f"{exp_hash}/replicate_{self.replicate}/level_0/main"
         state_dict = utils.load_object(init_location, "model_init.pt", object_store, torch.load)
         model = deepcopy(self.model).initialize_object()
-        model.load_state_dict(state_dict)
+        model.module.load_state_dict(state_dict)
         pruned_model = PrunedClassifier(model, Mask.load(location, object_store))
-        torch.save(pruned_model.state_dict(), utils.get_local_path(location, "model_init.pt"))
+        torch.save(pruned_model.module.state_dict(), utils.get_local_path(location, "model_init.pt"))
 
         # set level specific hparams
         train_data = deepcopy(self.train_data)
