@@ -3,6 +3,7 @@ data
 exps
 !lth_diet/exps
 wandb
+sprint
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
