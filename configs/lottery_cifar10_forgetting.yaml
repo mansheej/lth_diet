@@ -35,13 +35,14 @@ levels: 20
 rewinding_steps: 200ba
 # pretraining
 pretrain_data:
-  cinic10:
+  cifar10:
     train: true
     dataset_transforms: 
       subset_by_score:
         score: cifar10_forgetting_scores
         size: 3200
         left_offset: 0
+        class_balanced: True
 pretrain_optimizer:
   sgd:
     lr: 0.1
