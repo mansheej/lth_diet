@@ -1,5 +1,5 @@
 from composer.models import ComposerClassifier, Initializer
-from torchvision.models import vgg16
+from torchvision import models
 import dataclasses
 from lth_diet.models.classifier import ClassifierHparams
 from lth_diet.utils import utils
@@ -14,7 +14,5 @@ class VGG16CIFARClassifierHparams(ClassifierHparams):
         return utils.get_hparams_name(self, prefix="VGG16CIFAR")
 
     def initialize_object(self) -> ComposerClassifier:
-        model = vgg16(
-            num_classes=self.num_classes,
-        )
+        model = models.vgg16_bn(pretrained=False, num_classes=self.num_classes)
         return ComposerClassifier(model)
