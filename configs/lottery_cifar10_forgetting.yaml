@@ -1,0 +1,64 @@
+seed: 789
+# model
+model:
+  resnet_cifar:
+    num_classes: 10
+    num_layers: 20
+# data
+train_data:
+  cifar10:
+    train: true
+val_data:
+  cifar10:
+    train: false
+# training:
+train_batch_size: 128
+val_batch_size: 1000
+optimizer:
+  sgd:
+    lr: 0.1
+    momentum: 0.9
+    weight_decay: 0.0001
+schedulers:
+  multistep:
+    milestones:
+    - 31200ba
+    - 46800ba
+    gamma: 0.1
+max_duration: 62400ba
+algorithms:
+  channels_last: {}
+callbacks:
+  lr_monitor: {}
+# pruning
+levels: 20
+rewinding_steps: 200ba
+# pretraining
+pretrain_data:
+  cifar10:
+    train: true
+    dataset_transforms: 
+      subset_by_score:
+        score: cifar10_forgetting_scores
+        size: 3200
+        left_offset: 0
+        class_balanced: True
+pretrain_optimizer:
+  sgd:
+    lr: 0.1
+    momentum: 0.9
+    weight_decay: 0.0001
+# boilerplate
+loggers:
+  file:
+    log_level: 3
+  wandb:
+    project: lth_diet
+    entity: prunes
+    tags: lottery_test
+dataloader:
+  persistent_workers: false
+object_store:
+  provider: google_storage
+  container: prunes
+  key_environ: GCS_KEY
