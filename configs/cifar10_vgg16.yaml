@@ -15,9 +15,9 @@ train_batch_size: 128
 val_batch_size: 1000
 optimizer:
   sgd:
-    lr: 0.1
+    lr: 0.05
     momentum: 0.9
-    weight_decay: 0.0005
+    weight_decay: 0.0001
 schedulers:
   multistep:
     milestones:
@@ -25,8 +25,6 @@ schedulers:
     - 46800ba
     gamma: 0.1
 max_duration: 62400ba
-algorithms:
-  channels_last: {}
 callbacks:
   lr_monitor: {}
 # boilerplate
