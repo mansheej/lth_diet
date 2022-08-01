@@ -30,7 +30,7 @@ algorithms:
 callbacks:
   lr_monitor: {}
 # pruning
-levels: 16
+levels: 20
 rewinding_steps: 200ba
 pruning:
   pruning_layers_to_ignore: fc.weight
